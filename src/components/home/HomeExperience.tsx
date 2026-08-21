@@ -25,7 +25,7 @@ export interface HomeExperienceCopy {
   featuredBody: string;
   viewProject: string;
   philosophyEyebrow: string;
-  philosophy: string;
+  philosophy: readonly string[];
   philosophyBody: string;
   allProjects: string;
   bootLines?: readonly string[];
@@ -1362,7 +1362,9 @@ export default function HomeExperience({
         </div>
         <div className="hx-philosophy__inner">
           <p className="hx-philosophy__eyebrow">{homeCopy.philosophyEyebrow}</p>
-          <blockquote id="philosophy-title">{homeCopy.philosophy}</blockquote>
+          <blockquote id="philosophy-title">
+            {homeCopy.philosophy.map((line) => <span key={line}>{line}</span>)}
+          </blockquote>
           <p className="hx-philosophy__body">{homeCopy.philosophyBody}</p>
           <a className="hx-philosophy__link" href={resolvedProjectsHref}>
             {homeCopy.allProjects}<span aria-hidden="true"> →</span>

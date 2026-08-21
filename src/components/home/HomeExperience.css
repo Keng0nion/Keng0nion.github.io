@@ -928,14 +928,18 @@
 }
 
 .hx-philosophy blockquote {
-  max-width: 19ch;
+  max-width: none;
   margin: clamp(2rem, 5vw, 4rem) 0 0;
   font-family: var(--display, sans-serif);
-  font-size: clamp(2.8rem, 7vw, 7rem);
+  font-size: clamp(2.8rem, 6vw, 6.5rem);
   font-weight: 600;
   letter-spacing: -.065em;
   line-height: .96;
-  text-wrap: balance;
+}
+
+.hx-philosophy blockquote span {
+  display: block;
+  white-space: nowrap;
 }
 
 .hx-philosophy__body {
@@ -1163,6 +1167,11 @@
 
   .hx-project__telemetry {
     gap: .55rem 1rem;
+  }
+
+  .hx-philosophy blockquote {
+    font-size: clamp(1.5rem, 7vw, 2.8rem);
+    letter-spacing: -.055em;
   }
 
   .hx-philosophy__matrix {
