@@ -32,6 +32,7 @@ export interface HomeExperienceCopy {
   bootSkip?: string;
   heroNavigationLabel?: string;
   globeHint?: string;
+  mobileGlobeHint?: string;
   webglFallbackTitle?: string;
   webglFallbackBody?: string;
 }
@@ -215,6 +216,7 @@ const copyDefaults = {
     bootSkip: 'Skip boot',
     heroNavigationLabel: 'Home navigation',
     globeHint: 'Drag to rotate · click anywhere to emit signal',
+    mobileGlobeHint: 'Auto-rotating · tap anywhere to emit signal',
     webglFallbackTitle: 'WebGL renderer unavailable',
     webglFallbackBody: 'A static Earth view is being used on this device.',
     bootLines: [
@@ -229,6 +231,7 @@ const copyDefaults = {
     bootSkip: '跳过启动',
     heroNavigationLabel: '首页导航',
     globeHint: '拖动旋转 · 点击任意位置发射字符信号',
+    mobileGlobeHint: '自动旋转 · 点击任意位置发射字符信号',
     webglFallbackTitle: 'WebGL 渲染器不可用',
     webglFallbackBody: '当前设备将显示静态地球视图。',
     bootLines: [
@@ -1190,7 +1193,9 @@ function EarthGlobe({
       )}
       <p className="hx-globe__hint">
         <span aria-hidden="true">[ orbit.control ]</span>
-        {copy.globeHint ?? defaults.globeHint}
+        {mobile
+          ? copy.mobileGlobeHint ?? defaults.mobileGlobeHint
+          : copy.globeHint ?? defaults.globeHint}
       </p>
     </div>
   );
