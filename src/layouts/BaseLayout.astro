@@ -1,0 +1,84 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/inter/700.css';
+import '@fontsource/space-grotesk/500.css';
+import '@fontsource/space-grotesk/600.css';
+import '@fontsource/space-grotesk/700.css';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
+import '@fontsource/ibm-plex-mono/600.css';
+import '../styles/global.css';
+import type { Locale } from '../lib/site';
+import { alternatePath, SITE } from '../lib/site';
+
+interface Props {
+  title?: string;
+  description?: string;
+  locale: Locale;
+  home?: boolean;
+  noFooter?: boolean;
+}
+
+const {
+  title = SITE.title,
+  description = SITE.description[Astro.props.locale],
+  locale,
+  home = false,
+  noFooter = false,
+} = Astro.props;
+const pathname = Astro.url.pathname;
+const pageTitle = title === SITE.title ? title : `${title} — ${SITE.title}`;
+const canonical = new URL(pathname, Astro.site);
+const enPath = alternatePath(pathname, 'en');
+const zhPath = alternatePath(pathname, 'zh');
+---
+<!doctype html>
+<html lang={locale === 'zh' ? 'zh-CN' : 'en'}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="theme-color" content="#030503" />
+    <meta name="description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={SITE.title} />
+    <meta name="twitter:card" content="summary" />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="en" href={new URL(enPath, Astro.site)} />
+    <link rel="alternate" hreflang="zh-CN" href={new URL(zhPath, Astro.site)} />
+    <link rel="alternate" hreflang="x-default" href={new URL(enPath, Astro.site)} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{pageTitle}</title>
+    <script is:inline>
+      try {
+        const preferred = localStorage.getItem('keng0nion-locale');
+        const path = window.location.pathname;
+        const suffix = `${window.location.search}${window.location.hash}`;
+        const isZh = path === '/zh/' || path.startsWith('/zh/');
+        if (preferred === 'zh' && !isZh) {
+          const target = path === '/' ? '/zh/' : `/zh${path}`;
+          window.location.replace(`${target}${suffix}`);
+        }
+        if (preferred === 'en' && isZh) {
+          const target = path.slice(3) || '/';
+          window.location.replace(`${target}${suffix}`);
+        }
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">{locale === 'en' ? 'Skip to content' : '跳至主要内容'}</a>
+    <Header locale={locale} pathname={pathname} home={home} />
+    <main id="main" class:list={[{ 'page-main': !home }]}>
+      <slot />
+    </main>
+    {!noFooter && <Footer locale={locale} />}
+  </body>
+</html>

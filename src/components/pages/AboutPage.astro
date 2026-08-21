@@ -1,0 +1,64 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { pageCopy, timeline } from '../../data/content';
+import type { Locale } from '../../lib/site';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const copy = pageCopy.about[locale];
+---
+
+<BaseLayout
+  locale={locale}
+  title={locale === 'en' ? 'About' : '关于我'}
+  description={copy.intro}
+>
+  <section class="page-hero" data-index="A">
+    <div class="container page-hero-grid">
+      <div>
+        <p class="eyebrow">{copy.eyebrow}</p>
+        <h1 class="display-title">{copy.title}</h1>
+      </div>
+      <p class="lede">{copy.role}</p>
+    </div>
+  </section>
+
+  <section class="container about-grid">
+    <figure class="portrait-frame">
+      <img
+        src="/kengo-avatar.jpg"
+        alt={locale === 'en' ? 'Portrait of Kengo Kubota' : '久保田健吾的肖像'}
+        width="720"
+        height="720"
+        loading="eager"
+      />
+    </figure>
+    <div class="about-copy">
+      <h2><span class="handle">@{copy.handle}</span></h2>
+      <p class="role">{copy.role}</p>
+      <p>{copy.intro}</p>
+      <p class="about-note">{copy.note}</p>
+    </div>
+  </section>
+
+  <section class="timeline-section">
+    <div class="container">
+      <div class="timeline-head">
+        <p class="eyebrow">{copy.timelineEyebrow}</p>
+        <h2 class="display-title">{copy.timelineTitle}</h2>
+      </div>
+      <div class="timeline-list">
+        {timeline.map((item) => (
+          <article class="timeline-item">
+            <span class="timeline-year">{item.year}</span>
+            <h3>{item.title[locale]}</h3>
+            <p>{item.body[locale]}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,43 @@
+---
+import HomeExperience from '../components/home/HomeExperience';
+import { homeCopy } from '../data/content';
+import { featuredProjects, statusLabels } from '../data/projects';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { navLabels, pathFor, projectPath, SITE } from '../lib/site';
+
+const locale = 'en' as const;
+const labels = navLabels[locale];
+const nav = [
+  { id: 'home', href: pathFor(locale), label: labels.home },
+  { id: 'projects', href: pathFor(locale, 'projects'), label: labels.projects },
+  { id: 'about', href: pathFor(locale, 'about'), label: labels.about },
+  { id: 'contact', href: pathFor(locale, 'contact'), label: labels.contact },
+];
+const featured = featuredProjects.map((project) => ({
+  slug: project.slug,
+  name: project.name,
+  href: projectPath(locale, project.slug),
+  kicker: project.kicker[locale],
+  short: project.short[locale],
+  status: project.status,
+  statusLabel: statusLabels[locale][project.status],
+  accent: project.accent,
+  index: project.index,
+}));
+---
+
+<BaseLayout
+  locale={locale}
+  title={SITE.title}
+  description={SITE.description[locale]}
+  home
+>
+  <HomeExperience
+    client:load
+    locale={locale}
+    homeCopy={homeCopy[locale]}
+    featuredProjects={featured}
+    nav={nav}
+    projectsHref={pathFor(locale, 'projects')}
+  />
+</BaseLayout>

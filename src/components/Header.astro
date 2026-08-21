@@ -1,0 +1,58 @@
+---
+import type { Locale } from '../lib/site';
+import { alternatePath, navLabels, pathFor, SITE } from '../lib/site';
+
+interface Props {
+  locale: Locale;
+  pathname: string;
+  home?: boolean;
+}
+
+const { locale, pathname, home = false } = Astro.props;
+const labels = navLabels[locale];
+const nav = [
+  { label: labels.home, href: pathFor(locale), match: pathFor(locale) },
+  { label: labels.projects, href: pathFor(locale, 'projects'), match: pathFor(locale, 'projects') },
+  { label: labels.about, href: pathFor(locale, 'about'), match: pathFor(locale, 'about') },
+  { label: labels.contact, href: pathFor(locale, 'contact'), match: pathFor(locale, 'contact') },
+];
+const normalized = pathname.endsWith('/') ? pathname : `${pathname}/`;
+const isActive = (match: string) => match === pathFor(locale) ? normalized === match : normalized.startsWith(match);
+const otherLocale: Locale = locale === 'en' ? 'zh' : 'en';
+const otherLabel = otherLocale === 'zh' ? '中文' : 'EN';
+---
+<header class:list={['site-header', { 'is-home': home }]} data-site-header>
+  <div class="container header-inner">
+    <a class="brand" href={pathFor(locale)} aria-label={SITE.title}>
+      <span class="brand-mark" aria-hidden="true">K</span>
+      <span class="brand-label">Keng0nion's Farm</span>
+    </a>
+    <div class="nav-shell">
+      <nav class="site-nav" aria-label={locale === 'en' ? 'Primary navigation' : '主导航'}>
+        {nav.map((item) => <a href={item.href} aria-current={isActive(item.match) ? 'page' : undefined}>{item.label}</a>)}
+      </nav>
+      <a class="language-switch" href={alternatePath(normalized, otherLocale)} data-language-switch data-locale={otherLocale}>
+        <span aria-hidden="true">//</span>{otherLabel}
+      </a>
+      <details class="mobile-nav">
+        <summary>{locale === 'en' ? 'MENU' : '菜单'}</summary>
+        <nav class="mobile-panel" aria-label={locale === 'en' ? 'Mobile navigation' : '移动端导航'}>
+          {nav.map((item) => <a href={item.href} aria-current={isActive(item.match) ? 'page' : undefined}>{item.label}</a>)}
+        </nav>
+      </details>
+    </div>
+  </div>
+</header>
+<script>
+  const header = document.querySelector('[data-site-header]');
+  const updateHeader = () => header?.classList.toggle('is-scrolled', window.scrollY > 24);
+  updateHeader();
+  window.addEventListener('scroll', updateHeader, { passive: true });
+
+  document.querySelectorAll('[data-language-switch]').forEach((link) => {
+    link.addEventListener('click', () => {
+      const locale = link.getAttribute('data-locale');
+      if (locale) localStorage.setItem('keng0nion-locale', locale);
+    });
+  });
+</script>

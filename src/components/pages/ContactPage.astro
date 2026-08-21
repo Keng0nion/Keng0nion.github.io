@@ -1,0 +1,54 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { pageCopy } from '../../data/content';
+import type { Locale } from '../../lib/site';
+import { SITE } from '../../lib/site';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const copy = pageCopy.contact[locale];
+const githubNote = locale === 'en'
+  ? 'Browse public repositories, project history, and source code.'
+  : '浏览公开仓库、项目历史与源代码。';
+---
+
+<BaseLayout
+  locale={locale}
+  title={locale === 'en' ? 'Contact' : '联系方式'}
+  description={copy.intro}
+>
+  <section class="page-hero" data-index="@">
+    <div class="container page-hero-grid">
+      <div>
+        <p class="eyebrow">{copy.eyebrow}</p>
+        <h1 class="display-title">{copy.title}</h1>
+      </div>
+      <p class="lede">{copy.intro}</p>
+    </div>
+  </section>
+
+  <section class="container" aria-label={copy.eyebrow}>
+    <div class="contact-layout">
+      <a class="contact-card" href={`mailto:${SITE.email}`}>
+        <div>
+          <span class="contact-icon">01 // {copy.email}</span>
+          <h2>{SITE.email}</h2>
+          <p>{copy.response}</p>
+        </div>
+        <span class="contact-arrow" aria-hidden="true">↗</span>
+      </a>
+
+      <a class="contact-card" href={SITE.github} target="_blank" rel="noreferrer">
+        <div>
+          <span class="contact-icon">02 // {copy.github}</span>
+          <h2>Keng0nion</h2>
+          <p>{githubNote}</p>
+        </div>
+        <span class="contact-arrow" aria-hidden="true">↗</span>
+      </a>
+    </div>
+  </section>
+</BaseLayout>

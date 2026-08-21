@@ -1,0 +1,88 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { statusLabels, type Project } from '../../data/projects';
+import type { Locale } from '../../lib/site';
+
+interface Props {
+  locale: Locale;
+  project: Project;
+}
+
+const { locale, project } = Astro.props;
+const copy = {
+  en: {
+    eyebrow: 'Project dossier',
+    overview: 'Project overview',
+    status: 'Status',
+    focus: 'Focus',
+    record: 'Archive record',
+    source: 'View source',
+    live: 'Open live project',
+  },
+  zh: {
+    eyebrow: '项目档案详情',
+    overview: '项目概述',
+    status: '状态',
+    focus: '方向',
+    record: '档案编号',
+    source: '查看源代码',
+    live: '打开在线项目',
+  },
+} as const;
+const labels = copy[locale];
+---
+
+<BaseLayout
+  locale={locale}
+  title={project.name}
+  description={project.short[locale]}
+>
+  <section class="page-hero" data-index={project.index}>
+    <div class="container page-hero-grid">
+      <div>
+        <p class="eyebrow">{labels.eyebrow}</p>
+        <h1 class="display-title">{project.name}</h1>
+      </div>
+      <div>
+        <span class:list={['status', { 'in-development': project.status === 'in-development' }]}> 
+          {statusLabels[locale][project.status]}
+        </span>
+        <p class="lede">{project.short[locale]}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="container detail-shell">
+    <aside class="detail-meta" aria-label={locale === 'en' ? 'Project metadata' : '项目元数据'}>
+      <div class="meta-cell">
+        <span class="meta-label">{labels.status}</span>
+        <span class:list={['status', { 'in-development': project.status === 'in-development' }]}> 
+          {statusLabels[locale][project.status]}
+        </span>
+      </div>
+      <div class="meta-cell">
+        <span class="meta-label">{labels.focus}</span>
+        <span>{project.kicker[locale]}</span>
+      </div>
+      <div class="meta-cell">
+        <span class="meta-label">{labels.record}</span>
+        <span class="mono">PROJECT // {project.index}</span>
+      </div>
+    </aside>
+
+    <div class="detail-copy">
+      <p class="eyebrow">{labels.overview}</p>
+      <p>{project.description[locale]}</p>
+      <div class="detail-actions">
+        <a class="button" href={project.github} target="_blank" rel="noreferrer">
+          {labels.source}
+        </a>
+        {project.homepage && (
+          <a class="button secondary" href={project.homepage} target="_blank" rel="noreferrer">
+            {labels.live}
+          </a>
+        )}
+      </div>
+    </div>
+  </section>
+</BaseLayout>

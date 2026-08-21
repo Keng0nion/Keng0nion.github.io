@@ -1,0 +1,69 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { pageCopy } from '../../data/content';
+import { projects, statusLabels, type Project } from '../../data/projects';
+import type { Locale } from '../../lib/site';
+import { projectPath } from '../../lib/site';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const copy = pageCopy.projects[locale];
+const projectCount = locale === 'en'
+  ? `${projects.length} ${copy.count}`
+  : `${projects.length}${copy.count}`;
+const accentGlows: Record<Project['accent'], string> = {
+  lime: 'rgba(156, 255, 0, .18)',
+  cyan: 'rgba(69, 232, 255, .18)',
+  violet: 'rgba(174, 123, 255, .18)',
+  amber: 'rgba(255, 191, 71, .18)',
+  rose: 'rgba(255, 92, 136, .18)',
+};
+---
+
+<BaseLayout
+  locale={locale}
+  title={locale === 'en' ? 'Projects' : '项目'}
+  description={copy.intro}
+>
+  <section class="page-hero" data-index={String(projects.length).padStart(2, '0')}>
+    <div class="container page-hero-grid">
+      <div>
+        <p class="eyebrow">{copy.eyebrow}</p>
+        <h1 class="display-title">{copy.title}</h1>
+      </div>
+      <div>
+        <p class="lede">{copy.intro}</p>
+        <span class="mono">{projectCount}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="container" aria-label={copy.eyebrow}>
+    <div class="project-grid">
+      {projects.map((project) => (
+        <article
+          class="project-card"
+          style={`--project-glow: ${accentGlows[project.accent]};`}
+        >
+          <div class="project-card-top">
+            <span class="project-number">{project.index}</span>
+            <span class:list={['status', { 'in-development': project.status === 'in-development' }]}> 
+              {statusLabels[locale][project.status]}
+            </span>
+          </div>
+          <h2>
+            <a href={projectPath(locale, project.slug)}>{project.name}</a>
+          </h2>
+          <p class="mono">{project.kicker[locale]}</p>
+          <p>{project.short[locale]}</p>
+          <a class="project-card-link" href={projectPath(locale, project.slug)}>
+            {copy.open}
+          </a>
+        </article>
+      ))}
+    </div>
+  </section>
+</BaseLayout>

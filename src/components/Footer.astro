@@ -1,0 +1,17 @@
+---
+import type { Locale } from '../lib/site';
+import { pathFor, SITE } from '../lib/site';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const year = new Date().getFullYear();
+---
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <span>© {year} Kengo Kubota // {locale === 'en' ? 'Built with curiosity' : '由好奇心驱动'}</span>
+    <span class="footer-links">
+      <a href={SITE.github} target="_blank" rel="noreferrer">GitHub</a>
+      <a href={pathFor(locale, 'credits')}>{locale === 'en' ? 'Credits' : '致谢'}</a>
+    </span>
+  </div>
+</footer>

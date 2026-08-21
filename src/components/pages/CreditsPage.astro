@@ -1,0 +1,106 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import type { Locale } from '../../lib/site';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const copy = {
+  en: {
+    eyebrow: 'Third-party attribution',
+    title: 'Credits and licenses.',
+    intro: 'Attribution for the visual assets and open-source rendering libraries used by this website.',
+    texturesTitle: 'Earth and space textures',
+    texturesProvider: 'Earth surface, night, cloud, normal, and Milky Way textures are provided by Solar System Scope / INOVE.',
+    texturesLicense: 'Licensed under the Creative Commons Attribution 4.0 International license (CC BY 4.0).',
+    texturesChanges: 'Changes made for this website: files were renamed; the Earth normal map was converted from TIFF to PNG for browser and WebGL use. The textures may also be resized or compressed by the website build and delivery process.',
+    texturesNote: 'The texture source notes that its maps are based in part on NASA imagery. No endorsement by NASA or Solar System Scope is implied.',
+    source: 'Texture source',
+    license: 'CC BY 4.0 license',
+    librariesTitle: 'Globe rendering libraries',
+    byVasco: 'by Vasco Asturiano — MIT License',
+    byThree: 'by the Three.js authors — MIT License',
+    versions: 'See each package in node_modules and the project lockfile for exact versions and license text.',
+  },
+  zh: {
+    eyebrow: '第三方归属',
+    title: '致谢与许可证。',
+    intro: '本页列出此网站使用的视觉素材与开源地球渲染库的准确归属信息。',
+    texturesTitle: '地球与太空纹理',
+    texturesProvider: '地球表面、夜间、云层、法线以及银河纹理由 Solar System Scope / INOVE 提供。',
+    texturesLicense: '这些纹理采用知识共享署名 4.0 国际许可协议（CC BY 4.0）。',
+    texturesChanges: '本网站所做的修改：文件经过重命名；为供浏览器与 WebGL 使用，地球法线贴图由 TIFF 转换为 PNG。网站构建与交付流程也可能对纹理进行缩放或压缩。',
+    texturesNote: '纹理来源说明其贴图部分基于 NASA 图像。本网站不暗示 NASA 或 Solar System Scope 对其提供任何认可或背书。',
+    source: '纹理来源',
+    license: 'CC BY 4.0 许可证',
+    librariesTitle: '地球渲染库',
+    byVasco: '作者 Vasco Asturiano — MIT 许可证',
+    byThree: '作者为 Three.js authors — MIT 许可证',
+    versions: '各软件包的准确版本与许可证全文请参阅 node_modules 和项目锁文件。',
+  },
+} as const;
+const labels = copy[locale];
+---
+
+<BaseLayout
+  locale={locale}
+  title={locale === 'en' ? 'Credits' : '致谢与归属'}
+  description={labels.intro}
+>
+  <section class="page-hero" data-index="CC">
+    <div class="container page-hero-grid">
+      <div>
+        <p class="eyebrow">{labels.eyebrow}</p>
+        <h1 class="display-title">{labels.title}</h1>
+      </div>
+      <p class="lede">{labels.intro}</p>
+    </div>
+  </section>
+
+  <section class="container" aria-label={labels.eyebrow}>
+    <div class="contact-layout">
+      <article class="contact-card">
+        <div>
+          <span class="contact-icon">01 // CC BY 4.0</span>
+          <h2>{labels.texturesTitle}</h2>
+          <p>{labels.texturesProvider}</p>
+          <p>{labels.texturesLicense}</p>
+          <p>{labels.texturesChanges}</p>
+          <p>{labels.texturesNote}</p>
+        </div>
+        <div class="detail-actions">
+          <a
+            class="button"
+            href="https://www.solarsystemscope.com/textures/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            {labels.source}
+          </a>
+          <a
+            class="button secondary"
+            href="https://creativecommons.org/licenses/by/4.0/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            {labels.license}
+          </a>
+        </div>
+      </article>
+
+      <article class="contact-card">
+        <div>
+          <span class="contact-icon">02 // MIT</span>
+          <h2>{labels.librariesTitle}</h2>
+          <p><code>react-globe.gl</code> {labels.byVasco}</p>
+          <p><code>three-globe</code> / <code>globe.gl</code> {labels.byVasco}</p>
+          <p><code>three</code> {labels.byThree}</p>
+          <p>{labels.versions}</p>
+        </div>
+        <span class="contact-arrow" aria-hidden="true">MIT</span>
+      </article>
+    </div>
+  </section>
+</BaseLayout>
