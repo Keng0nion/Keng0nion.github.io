@@ -16,6 +16,9 @@ const copy = {
     status: 'Status',
     focus: 'Focus',
     record: 'Archive record',
+    skills: 'Skills developed',
+    progress: 'Current progress',
+    nextStep: 'Next step',
     source: 'View source',
     live: 'Open live project',
   },
@@ -25,6 +28,9 @@ const copy = {
     status: '状态',
     focus: '方向',
     record: '档案编号',
+    skills: '锻炼的能力',
+    progress: '当前进度',
+    nextStep: '下一步',
     source: '查看源代码',
     live: '打开在线项目',
   },
@@ -71,8 +77,30 @@ const labels = copy[locale];
     </aside>
 
     <div class="detail-copy">
-      <p class="eyebrow">{labels.overview}</p>
-      <p>{project.description[locale]}</p>
+      <section class="detail-section" aria-labelledby="project-overview-heading">
+        <h2 class="eyebrow" id="project-overview-heading">{labels.overview}</h2>
+        <p>{project.description[locale]}</p>
+      </section>
+
+      <section class="detail-section" aria-labelledby="project-skills-heading">
+        <h2 class="eyebrow" id="project-skills-heading">{labels.skills}</h2>
+        <p>{project.skills[locale]}</p>
+      </section>
+
+      {project.progress && (
+        <section class="detail-section" aria-labelledby="project-progress-heading">
+          <h2 class="eyebrow" id="project-progress-heading">{labels.progress}</h2>
+          <p>{project.progress[locale]}</p>
+        </section>
+      )}
+
+      {project.nextStep && (
+        <section class="detail-section" aria-labelledby="project-next-step-heading">
+          <h2 class="eyebrow" id="project-next-step-heading">{labels.nextStep}</h2>
+          <p>{project.nextStep[locale]}</p>
+        </section>
+      )}
+
       <div class="detail-actions">
         <a class="button" href={project.github} target="_blank" rel="noreferrer">
           {labels.source}

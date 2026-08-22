@@ -61,6 +61,12 @@ const accentGlows: Record<Project['accent'], string> = {
           </h2>
           <p class="mono">{project.kicker[locale]}</p>
           <p>{project.short[locale]}</p>
+          {project.status === 'in-development' && project.progress && (
+            <div class="project-card-progress">
+              <span class="meta-label">{copy.currentProgress}</span>
+              <p>{project.progress[locale]}</p>
+            </div>
+          )}
           <a class="project-card-link" href={projectPath(locale, project.slug)}>
             {copy.open}
           </a>

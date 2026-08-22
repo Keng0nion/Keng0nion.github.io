@@ -33,12 +33,14 @@ export interface HomeExperienceCopy {
   philosophyEyebrow: string;
   philosophy: readonly PhilosophyLine[];
   philosophyBody: string;
+  bioinformaticsNote?: string;
   allProjects: string;
   bootLines?: readonly string[];
   bootSkip?: string;
   heroNavigationLabel?: string;
   globeHint?: string;
   mobileGlobeHint?: string;
+  reducedGlobeHint?: string;
   webglFallbackTitle?: string;
   webglFallbackBody?: string;
 }
@@ -223,7 +225,8 @@ const copyDefaults = {
     bootSkip: 'Skip boot',
     heroNavigationLabel: 'Home navigation',
     globeHint: 'Drag to rotate · click anywhere to emit signal',
-    mobileGlobeHint: 'Auto-rotating · tap anywhere to emit signal',
+    mobileGlobeHint: 'Optimized static globe · tap anywhere to emit signal',
+    reducedGlobeHint: 'Static globe · motion effects paused',
     webglFallbackTitle: 'WebGL renderer unavailable',
     webglFallbackBody: 'A static Earth view is being used on this device.',
     bootLines: [
@@ -238,7 +241,8 @@ const copyDefaults = {
     bootSkip: '跳过启动',
     heroNavigationLabel: '首页导航',
     globeHint: '拖动旋转 · 点击任意位置发射字符信号',
-    mobileGlobeHint: '自动旋转 · 点击任意位置发射字符信号',
+    mobileGlobeHint: '优化静态地球 · 点击任意位置发射字符信号',
+    reducedGlobeHint: '静态地球 · 动态效果已暂停',
     webglFallbackTitle: 'WebGL 渲染器不可用',
     webglFallbackBody: '当前设备将显示静态地球视图。',
     bootLines: [
@@ -460,7 +464,15 @@ function BootSequence({
   );
 }
 
-function MatrixCanvas({ active }: { active: boolean }) {
+function MatrixCanvas({
+  active,
+  mobile,
+  reducedMotion,
+}: {
+  active: boolean;
+  mobile: boolean;
+  reducedMotion: boolean;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -469,8 +481,6 @@ function MatrixCanvas({ active }: { active: boolean }) {
     const context = canvas.getContext('2d');
     if (!context) return;
 
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const mobile = window.matchMedia('(max-width: 767px), (pointer: coarse)').matches;
     let width = 1;
     let height = 1;
     let dpr = 1;
@@ -537,7 +547,7 @@ function MatrixCanvas({ active }: { active: boolean }) {
 
     const start = () => {
       if (running || !active || document.hidden) return;
-      if (reduced) {
+      if (reducedMotion) {
         drawStatic();
         return;
       }
@@ -558,7 +568,7 @@ function MatrixCanvas({ active }: { active: boolean }) {
     resize();
     const observer = new ResizeObserver(() => {
       resize();
-      if (reduced) drawStatic();
+      if (reducedMotion) drawStatic();
     });
     observer.observe(canvas);
     document.addEventListener('visibilitychange', onVisibility);
@@ -569,7 +579,7 @@ function MatrixCanvas({ active }: { active: boolean }) {
       observer.disconnect();
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [active]);
+  }, [active, mobile, reducedMotion]);
 
   return <canvas ref={canvasRef} className="hx-matrix" aria-hidden="true" />;
 }
@@ -578,10 +588,12 @@ function GlyphParticleCanvas({
   hostRef,
   titleRef,
   active,
+  reducedMotion,
 }: {
   hostRef: React.RefObject<HTMLElement | null>;
   titleRef: React.RefObject<HTMLHeadingElement | null>;
   active: boolean;
+  reducedMotion: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -592,8 +604,12 @@ function GlyphParticleCanvas({
     const context = canvas.getContext('2d');
     if (!context) return;
 
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const mobile = window.matchMedia('(max-width: 767px), (pointer: coarse)').matches;
+    if (reducedMotion) {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
+
     const particles: CanvasParticle[] = [];
     let width = 1;
     let height = 1;
@@ -623,7 +639,7 @@ function GlyphParticleCanvas({
     };
 
     const spawnBurst = (x: number, y: number) => {
-      const count = reduced ? 7 : mobile ? 16 : 30;
+      const count = mobile ? 16 : 30;
       for (let index = 0; index < count; index += 1) {
         const angle = (Math.PI * 2 * index) / count + Math.random() * 0.45;
         const speed = 55 + Math.random() * (mobile ? 80 : 145);
@@ -646,7 +662,7 @@ function GlyphParticleCanvas({
     };
 
     const spawnConvergence = () => {
-      if (reduced || !active || !titleRef.current) return;
+      if (!active || !titleRef.current) return;
       const hostRect = host.getBoundingClientRect();
       const glyphs = titleRef.current.querySelectorAll<HTMLElement>('[data-title-glyph]');
 
@@ -773,7 +789,7 @@ function GlyphParticleCanvas({
       host.removeEventListener('pointerdown', onPointerDown);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [active, hostRef, titleRef]);
+  }, [active, hostRef, reducedMotion, titleRef]);
 
   return <canvas ref={canvasRef} className="hx-particles" aria-hidden="true" />;
 }
@@ -918,13 +934,17 @@ function EarthGlobe({
   const textureRef = useRef<Array<{ anisotropy: number; needsUpdate: boolean; dispose(): void }>>([]);
   const materialRef = useRef<{ dispose(): void } | null>(null);
   const activeRef = useRef(active);
+  const mobileRef = useRef(mobile);
   const reducedRef = useRef(reducedMotion);
   const [GlobeComponent, setGlobeComponent] = useState<DynamicGlobe | null>(null);
   const [material, setMaterial] = useState<unknown>(null);
   const [status, setStatus] = useState<GlobeStatus>('checking');
   const [arcOffset, setArcOffset] = useState(0);
+  const [inView, setInView] = useState(false);
+  const [loadRequested, setLoadRequested] = useState(false);
 
   activeRef.current = active;
+  mobileRef.current = mobile;
   reducedRef.current = reducedMotion;
 
   const nodes = useMemo(
@@ -964,7 +984,7 @@ function EarthGlobe({
   }, [allArcs, arcOffset, mobile]);
 
   useEffect(() => {
-    if (reducedMotion || !active) return;
+    if (reducedMotion || mobile || !active) return;
     const interval = window.setInterval(() => {
       if (!document.hidden) setArcOffset((offset) => (offset + 1) % allArcs.length);
     }, mobile ? 5200 : 3900);
@@ -972,6 +992,34 @@ function EarthGlobe({
   }, [active, allArcs.length, mobile, reducedMotion]);
 
   useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    if (!('IntersectionObserver' in window)) {
+      setInView(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      setInView(Boolean(entry?.isIntersecting));
+    }, { threshold: 0.01 });
+    observer.observe(host);
+    return () => observer.disconnect();
+  }, [hostRef]);
+
+  useEffect(() => {
+    if (loadRequested || !active || !inView || mobile || reducedMotion) return;
+
+    const timer = window.setTimeout(() => {
+      if (window.matchMedia('(max-width: 767px), (pointer: coarse)').matches) return;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      setLoadRequested(true);
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [active, inView, loadRequested, mobile, reducedMotion]);
+
+  useEffect(() => {
+    if (!loadRequested) return;
     if (!supportsWebGL()) {
       setStatus('unavailable');
       return;
@@ -985,10 +1033,10 @@ function EarthGlobe({
         const loader = new THREE.TextureLoader();
         const [dayTexture, normalTexture, nightTexture, cloudTexture] =
           await Promise.all([
-            loader.loadAsync('/textures/earth-day.jpg'),
-            loader.loadAsync('/textures/earth-normal.png'),
-            loader.loadAsync('/textures/earth-night.jpg'),
-            loader.loadAsync('/textures/earth-clouds.jpg'),
+            loader.loadAsync('/textures/earth-day.webp'),
+            loader.loadAsync('/textures/earth-normal.webp'),
+            loader.loadAsync('/textures/earth-night.webp'),
+            loader.loadAsync('/textures/earth-clouds.webp'),
           ]);
 
         dayTexture.colorSpace = THREE.SRGBColorSpace;
@@ -1040,7 +1088,7 @@ function EarthGlobe({
       textureRef.current.forEach((texture) => texture.dispose());
       textureRef.current = [];
     };
-  }, []);
+  }, [loadRequested]);
 
   const configureGlobe = useCallback(() => {
     const globe = globeRef.current;
@@ -1048,8 +1096,8 @@ function EarthGlobe({
     const controls = globe.controls();
     controls.enableZoom = false;
     controls.enablePan = false;
-    controls.enableRotate = !mobile;
-    controls.autoRotate = active && !reducedMotion;
+    controls.enableRotate = !mobile && !reducedMotion;
+    controls.autoRotate = active && !mobile && !reducedMotion;
     controls.autoRotateSpeed = mobile ? 0.52 : 0.24;
     controls.enableDamping = true;
     controls.dampingFactor = 0.06;
@@ -1063,19 +1111,27 @@ function EarthGlobe({
     const globe = globeRef.current;
     if (!globe) return;
     configureGlobe();
-    if (active && !document.hidden) globe.resumeAnimation();
+    if (active && !mobile && !reducedMotion && !document.hidden) globe.resumeAnimation();
     else globe.pauseAnimation();
-  }, [active, configureGlobe]);
+  }, [active, configureGlobe, mobile, reducedMotion]);
 
   useEffect(() => {
     const onVisibility = () => {
       const globe = globeRef.current;
       if (!globe) return;
-      if (document.hidden || !activeRef.current) globe.pauseAnimation();
+      if (
+        document.hidden ||
+        !activeRef.current ||
+        mobileRef.current ||
+        reducedRef.current
+      ) globe.pauseAnimation();
       else globe.resumeAnimation();
       const controls = globe.controls();
       controls.autoRotate =
-        !document.hidden && activeRef.current && !reducedRef.current;
+        !document.hidden &&
+        activeRef.current &&
+        !mobileRef.current &&
+        !reducedRef.current;
     };
 
     document.addEventListener('visibilitychange', onVisibility);
@@ -1124,7 +1180,12 @@ function EarthGlobe({
         const now = performance.now();
         const delta = Math.min(0.05, (now - previousTime) / 1000);
         previousTime = now;
-        if (!document.hidden && activeRef.current && !reducedRef.current) {
+        if (
+          !document.hidden &&
+          activeRef.current &&
+          !mobileRef.current &&
+          !reducedRef.current
+        ) {
           cloudMesh.rotation.y += delta * 0.012;
         }
       };
@@ -1140,18 +1201,23 @@ function EarthGlobe({
     contextLostCleanup.current = () =>
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
 
-    if (active && !document.hidden) globe.resumeAnimation();
+    if (active && !mobile && !reducedMotion && !document.hidden) globe.resumeAnimation();
     else globe.pauseAnimation();
     setStatus('ready');
-  }, [active, configureGlobe, mobile]);
+  }, [active, configureGlobe, mobile, reducedMotion]);
 
   const failed = status === 'unavailable';
+  const showWebGL = status === 'ready' && !mobile && !reducedMotion;
   const defaults = copyDefaults[locale];
 
   return (
-    <div ref={hostRef} className={`hx-globe${status === 'ready' ? ' is-ready' : ''}`}>
-      <StaticEarthFallback locale={locale} copy={copy} failed={failed} />
-      {GlobeComponent !== null && material !== null && !failed && (
+    <div ref={hostRef} className={`hx-globe${showWebGL ? ' is-ready' : ''}`}>
+      <StaticEarthFallback
+        locale={locale}
+        copy={copy}
+        failed={failed && !mobile && !reducedMotion}
+      />
+      {GlobeComponent !== null && material !== null && !failed && !mobile && !reducedMotion && (
         <div className="hx-globe__renderer" aria-hidden="true">
           <GlobeComponent
             ref={globeRef}
@@ -1200,9 +1266,11 @@ function EarthGlobe({
       )}
       <p className="hx-globe__hint">
         <span aria-hidden="true">[ orbit.control ]</span>
-        {mobile
-          ? copy.mobileGlobeHint ?? defaults.mobileGlobeHint
-          : copy.globeHint ?? defaults.globeHint}
+        {reducedMotion
+          ? copy.reducedGlobeHint ?? defaults.reducedGlobeHint
+          : mobile
+            ? copy.mobileGlobeHint ?? defaults.mobileGlobeHint
+            : copy.globeHint ?? defaults.globeHint}
       </p>
     </div>
   );
@@ -1374,7 +1442,7 @@ export default function HomeExperience({
   }, [reducedMotion, revealCycle]);
 
   return (
-    <div className={`hx-home${cardRevealReady ? ' is-card-reveal-ready' : ''}`}>
+    <div className={`hx-home${active ? ' is-experience-active' : ''}${cardRevealReady ? ' is-card-reveal-ready' : ''}`}>
       <BootSequence
         locale={locale}
         copy={homeCopy}
@@ -1384,7 +1452,11 @@ export default function HomeExperience({
       />
 
       <section ref={heroRef} className="hx-hero" aria-labelledby="home-title">
-        <MatrixCanvas active={active} />
+        <MatrixCanvas
+          active={active}
+          mobile={mobile}
+          reducedMotion={reducedMotion}
+        />
         <EarthGlobe
           locale={locale}
           copy={homeCopy}
@@ -1392,7 +1464,12 @@ export default function HomeExperience({
           mobile={mobile}
           reducedMotion={reducedMotion}
         />
-        <GlyphParticleCanvas hostRef={heroRef} titleRef={titleRef} active={active} />
+        <GlyphParticleCanvas
+          hostRef={heroRef}
+          titleRef={titleRef}
+          active={active}
+          reducedMotion={reducedMotion}
+        />
 
         <div className="hx-hero__reticle" aria-hidden="true">
           <span />
@@ -1476,6 +1553,9 @@ export default function HomeExperience({
             ))}
           </blockquote>
           <p className="hx-philosophy__body">{homeCopy.philosophyBody}</p>
+          {homeCopy.bioinformaticsNote && (
+            <p className="hx-philosophy__bio">{homeCopy.bioinformaticsNote}</p>
+          )}
           <a className="hx-philosophy__link" href={resolvedProjectsHref}>
             {homeCopy.allProjects}<span aria-hidden="true"> →</span>
           </a>

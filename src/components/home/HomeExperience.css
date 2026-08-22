@@ -33,6 +33,10 @@
   border: 0;
 }
 
+html.skip-home-boot .hx-boot {
+  display: none !important;
+}
+
 .hx-boot {
   position: fixed;
   inset: 0;
@@ -321,9 +325,8 @@
   background-color: #07120a;
   background-image:
     radial-gradient(circle at 67% 70%, transparent 0 46%, rgba(0, 0, 0, .8) 76%),
-    radial-gradient(circle at 27% 24%, rgba(255, 255, 255, .25), transparent 18%),
-    url('/textures/earth-day.jpg');
-  background-position: center, center, center;
+    radial-gradient(circle at 27% 24%, rgba(255, 255, 255, .25), transparent 18%);
+  background-position: center, center;
   background-size: cover;
   box-shadow:
     -2.5rem -1rem 5rem rgba(116, 255, 81, .11),
@@ -341,8 +344,15 @@
   pointer-events: none;
 }
 
+.hx-home.is-experience-active .hx-static-globe__sphere {
+  background-image:
+    radial-gradient(circle at 67% 70%, transparent 0 46%, rgba(0, 0, 0, .8) 76%),
+    radial-gradient(circle at 27% 24%, rgba(255, 255, 255, .25), transparent 18%),
+    url('/textures/earth-day.webp');
+  background-position: center, center, center;
+}
+
 .hx-static-globe__sphere::before {
-  background: url('/textures/earth-night.jpg') center / cover;
   mix-blend-mode: screen;
   opacity: .27;
   mask-image: linear-gradient(90deg, transparent 20%, #000 76%);
@@ -353,15 +363,22 @@
   box-shadow: inset 0 0 2rem rgba(156, 255, 0, .09);
 }
 
+.hx-home.is-experience-active .hx-static-globe__sphere::before {
+  background: url('/textures/earth-night.webp') center / cover;
+}
+
 .hx-static-globe__clouds {
   position: absolute;
   inset: -.65%;
   border-radius: 50%;
-  background: url('/textures/earth-clouds.jpg') center / cover;
   mix-blend-mode: screen;
   opacity: .34;
   filter: contrast(1.25);
   animation: hx-clouds 78s linear infinite;
+}
+
+.hx-home.is-experience-active .hx-static-globe__clouds {
+  background: url('/textures/earth-clouds.webp') center / cover;
 }
 
 .hx-static-globe.is-fallback .hx-static-globe__sphere::after {
@@ -496,6 +513,7 @@
 
 .hx-title {
   display: flex;
+  pointer-events: auto;
   min-height: 1.1em;
   align-items: center;
   justify-content: center;
@@ -517,6 +535,7 @@
 
 .hx-title-glyph {
   opacity: 0;
+  transition: color 140ms ease, translate 140ms ease, text-shadow 140ms ease;
   transform: translate(var(--glyph-x), var(--glyph-y)) rotate(var(--glyph-r)) scale(.15);
   text-shadow:
     0 0 .5rem rgba(156, 255, 0, .78),
@@ -893,6 +912,37 @@
   letter-spacing: .08em;
 }
 
+@media (min-width: 768px) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .hx-title.is-entered .hx-title-glyph:hover {
+    color: var(--hx-green-soft);
+    translate: 0 -2px;
+    text-shadow:
+      0 0 .65rem rgba(156, 255, 0, .9),
+      0 0 2.2rem rgba(156, 255, 0, .3);
+  }
+
+  .hx-home.is-card-reveal-ready .hx-project__telemetry span {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  .hx-home.is-card-reveal-ready .hx-project.is-revealed .hx-project__telemetry span {
+    animation: hx-telemetry-in 180ms ease-out both;
+  }
+
+  .hx-home.is-card-reveal-ready .hx-project.is-revealed .hx-project__telemetry span:nth-child(1) {
+    animation-delay: var(--reveal-delay, 0ms);
+  }
+
+  .hx-home.is-card-reveal-ready .hx-project.is-revealed .hx-project__telemetry span:nth-child(2) {
+    animation-delay: calc(var(--reveal-delay, 0ms) + 55ms);
+  }
+
+  .hx-home.is-card-reveal-ready .hx-project.is-revealed .hx-project__telemetry span:nth-child(3) {
+    animation-delay: calc(var(--reveal-delay, 0ms) + 110ms);
+  }
+}
+
 .hx-philosophy {
   position: relative;
   display: grid;
@@ -996,6 +1046,18 @@
   line-height: 1.8;
 }
 
+.hx-philosophy__bio {
+  max-width: 48rem;
+  margin: clamp(1.2rem, 3vw, 2rem) 0 0;
+  padding: 1rem clamp(1rem, 3vw, 1.5rem);
+  border-left: 1px solid var(--hx-green);
+  background: rgba(156, 255, 0, .035);
+  color: #c1cdbb;
+  font-size: clamp(.92rem, 1.5vw, 1.05rem);
+  line-height: 1.75;
+  text-align: left;
+}
+
 .hx-philosophy__link {
   display: inline-flex;
   min-width: 2.75rem;
@@ -1027,6 +1089,11 @@
 @keyframes hx-philosophy-line-in {
   from { opacity: 0; translate: 0 8px; }
   to { opacity: 1; translate: 0; }
+}
+
+@keyframes hx-telemetry-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes hx-boot-flicker {
@@ -1321,7 +1388,13 @@
   }
 
   .hx-globe__renderer,
-  .hx-static-globe {
+  .hx-static-globe,
+  .hx-title-glyph {
     transition: none;
+  }
+
+  .hx-project__telemetry span {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

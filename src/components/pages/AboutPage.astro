@@ -55,7 +55,13 @@ const copy = pageCopy.about[locale];
           <article class="timeline-item" data-reveal-card data-reveal-order={index}>
             <span class="timeline-year">{item.year}</span>
             <h3>{item.title[locale]}</h3>
-            <p>{item.body[locale]}</p>
+            <div class="timeline-detail">
+              <p>{item.body[locale]}</p>
+              <div class="timeline-skills">
+                <span class="meta-label">{copy.timelineSkillsLabel}</span>
+                <p>{item.skills[locale]}</p>
+              </div>
+            </div>
           </article>
         ))}
       </div>

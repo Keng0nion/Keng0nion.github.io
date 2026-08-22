@@ -54,10 +54,15 @@ const zhPath = alternatePath(pathname, 'zh');
     <link rel="alternate" hreflang="en" href={new URL(enPath, Astro.site)} />
     <link rel="alternate" hreflang="zh-CN" href={new URL(zhPath, Astro.site)} />
     <link rel="alternate" hreflang="x-default" href={new URL(enPath, Astro.site)} />
+    <link rel="sitemap" href="/sitemap-index.xml" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{pageTitle}</title>
-    <script is:inline>
+    <script is:inline define:vars={{ home }}>
       try {
+        if (home && sessionStorage.getItem('keng0nion.home.boot.v1') === '1') {
+          document.documentElement.classList.add('skip-home-boot');
+        }
+
         const cardMotion = window.matchMedia('(min-width: 768px) and (pointer: fine)').matches
           && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         if ('IntersectionObserver' in window && cardMotion) {

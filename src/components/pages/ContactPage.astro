@@ -13,6 +13,7 @@ const copy = pageCopy.contact[locale];
 const githubNote = locale === 'en'
   ? 'Browse public repositories, project history, and source code.'
   : '浏览公开仓库、项目历史与源代码。';
+const resumeTitle = locale === 'en' ? 'Project / Portfolio Resume' : '项目 / 作品集简历';
 ---
 
 <BaseLayout
@@ -48,6 +49,21 @@ const githubNote = locale === 'en'
           <p>{githubNote}</p>
         </div>
         <span class="contact-arrow" aria-hidden="true">↗</span>
+      </a>
+
+      <a
+        class="contact-card"
+        href="/kengo-kubota-project-resume.pdf"
+        download
+        data-reveal-card
+        data-reveal-order="2"
+      >
+        <div>
+          <span class="contact-icon">03 // {copy.resume}</span>
+          <h2>{resumeTitle}</h2>
+          <p>{copy.resumeNote}</p>
+        </div>
+        <span class="contact-arrow" aria-hidden="true">↓</span>
       </a>
     </div>
   </section>

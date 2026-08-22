@@ -7,6 +7,7 @@ export const homeCopy = {
     featuredEyebrow: 'Selected work',
     featuredTitle: 'Projects built from questions.',
     featuredBody: 'Two completed explorations across scientific modeling and interactive mathematics.',
+    bioinformaticsNote: 'Ecolab showed me how computation can turn biological questions into models that can be tested, challenged, and improved. That intersection is why I want to keep exploring bioinformatics.',
     viewProject: 'View project',
     philosophyEyebrow: 'Operating principle',
     philosophy: [
@@ -23,6 +24,7 @@ export const homeCopy = {
     featuredEyebrow: '精选项目',
     featuredTitle: '从问题出发的作品。',
     featuredBody: '两个横跨科学建模与交互式数学的已完成探索。',
+    bioinformaticsNote: 'Ecolab 让我看到，计算方法可以把生物学问题转化为能够被检验、质疑和改进的模型。这种交叉正是我希望继续探索生物信息学的原因。',
     viewProject: '查看项目',
     philosophyEyebrow: '我的理念',
     philosophy: [
@@ -42,6 +44,7 @@ export const pageCopy = {
       title: 'Things I have built — and things still taking shape.',
       intro: 'A manually curated record of independent experiments across science, mathematics, security, games, and interactive interfaces.',
       open: 'Open project',
+      currentProgress: 'Current progress',
       count: 'public projects',
     },
     zh: {
@@ -49,6 +52,7 @@ export const pageCopy = {
       title: '已经完成的作品，以及仍在成形的想法。',
       intro: '一份手动维护的独立项目记录，涵盖科学、数学、安全、游戏与交互界面。',
       open: '打开项目',
+      currentProgress: '当前进度',
       count: '个公开项目',
     },
   },
@@ -62,6 +66,7 @@ export const pageCopy = {
       note: 'I do not see programming as a finished skill. It is a way to keep asking better questions—and to leave a visible record of how my thinking changes over time.',
       timelineEyebrow: 'Development journey',
       timelineTitle: 'A history of learning by making.',
+      timelineSkillsLabel: 'What this developed',
     },
     zh: {
       eyebrow: '关于我',
@@ -72,23 +77,28 @@ export const pageCopy = {
       note: '我不把编程看作一项已经学完的技能。它是一种持续提出更好问题的方式，也是一份记录自己思考如何随时间变化的可见档案。',
       timelineEyebrow: '开发历程',
       timelineTitle: '一段通过创造持续学习的记录。',
+      timelineSkillsLabel: '锻炼的能力',
     },
   },
   contact: {
     en: {
       eyebrow: 'Contact',
       title: 'Start a conversation.',
-      intro: 'For questions about my projects, university applications, or potential collaboration, the best ways to reach me are email and GitHub.',
+      intro: 'For questions about my projects, university applications, or potential collaboration, contact me by email or GitHub, or download my project-focused resume for a concise portfolio record.',
       email: 'Email me',
       github: 'View GitHub',
+      resume: 'Download project resume',
+      resumeNote: 'A one-page, English-first PDF summarizing selected projects, works in progress, demonstrated skills, and my AI-assisted workflow.',
       response: 'I read messages personally. Clear context and a descriptive subject line are always appreciated.',
     },
     zh: {
       eyebrow: '联系方式',
       title: '和我聊聊。',
-      intro: '如果你想询问我的项目、大学申请相关内容，或讨论潜在合作，可以通过电子邮箱和 GitHub 联系我。',
+      intro: '如果你想询问我的项目、大学申请相关内容，或讨论潜在合作，可以通过电子邮箱或 GitHub 联系我，也可以下载项目型简历，快速了解我的作品记录。',
       email: '发送邮件',
       github: '查看 GitHub',
+      resume: '下载项目型简历',
+      resumeNote: '一页英文为主的 PDF，概括精选项目、开发中作品、经项目证明的能力，以及我的 AI 辅助开发方式。',
       response: '所有消息都由我本人阅读。如果能提供清晰背景和明确主题，我会非常感谢。',
     },
   },
@@ -98,6 +108,7 @@ export const timeline: Array<{
   year: string;
   title: Record<Locale, string>;
   body: Record<Locale, string>;
+  skills: Record<Locale, string>;
 }> = [
   {
     year: '2015',
@@ -105,6 +116,10 @@ export const timeline: Array<{
     body: {
       en: 'Discovered programming through visual blocks and began experimenting with logic, sequence, and interaction.',
       zh: '通过图形化积木第一次接触编程，开始尝试逻辑、顺序与互动。',
+    },
+    skills: {
+      en: 'Logical sequencing, decomposition, and designing simple interactions.',
+      zh: '逻辑排序、问题拆解与基础交互设计。',
     },
   },
   {
@@ -114,6 +129,10 @@ export const timeline: Array<{
       en: 'Used LEGO Mindstorms EV3 to connect software decisions with physical movement, sensors, and iterative problem-solving.',
       zh: '通过 LEGO Mindstorms EV3 将软件决策与物理运动、传感器和迭代式问题解决联系起来。',
     },
+    skills: {
+      en: 'Sensor-based reasoning, hardware–software integration, and iterative troubleshooting.',
+      zh: '基于传感器的推理、软硬件协同与迭代排错。',
+    },
   },
   {
     year: '2021',
@@ -122,13 +141,21 @@ export const timeline: Array<{
       en: 'Transitioned from visual programming toward text-based code and a wider range of computational ideas.',
       zh: '从图形化编程逐渐转向文本代码，并接触更广泛的计算思维。',
     },
+    skills: {
+      en: 'Text-based programming, computational thinking, and independent technical learning.',
+      zh: '文本编程、计算思维与自主技术学习。',
+    },
   },
   {
     year: '2026',
     title: { en: 'Built an AI-assisted development workflow', zh: '建立 AI 辅助开发工作流' },
     body: {
-      en: 'Combined Claude Code with earlier programming foundations and project experience to develop multiple independent projects during the summer.',
-      zh: '将 Claude Code 与此前积累的编程基础和项目经验结合，在暑假开发多个独立项目。',
+      en: 'I remained responsible for defining each problem, setting requirements and scope, choosing the architectural direction, testing and debugging, reviewing results, and refining visual and interaction details. AI assisted with implementation, code suggestions, and faster iteration; I do not claim that every line of code was completed independently.',
+      zh: '我负责问题定义、需求与范围设定、架构方向、测试调试、结果审查，以及视觉与交互打磨。AI 用于实现辅助、代码建议和加速迭代；我不声称所有代码均由自己独立完成。',
+    },
+    skills: {
+      en: 'Problem framing, requirements and scope control, architectural judgment, verification, result review, and responsible use of AI assistance.',
+      zh: '问题界定、需求与范围控制、架构判断、验证与结果审查，以及负责任地使用 AI 辅助。',
     },
   },
 ];
