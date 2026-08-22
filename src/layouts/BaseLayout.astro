@@ -58,6 +58,17 @@ const zhPath = alternatePath(pathname, 'zh');
     <title>{pageTitle}</title>
     <script is:inline>
       try {
+        const cardMotion = window.matchMedia('(min-width: 768px) and (pointer: fine)').matches
+          && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if ('IntersectionObserver' in window && cardMotion) {
+          document.documentElement.classList.add('reveal-cards-enabled');
+          window.setTimeout(() => {
+            if (!document.documentElement.classList.contains('reveal-cards-initialized')) {
+              document.documentElement.classList.remove('reveal-cards-enabled');
+            }
+          }, 1500);
+        }
+
         const preferred = localStorage.getItem('keng0nion-locale');
         const path = window.location.pathname;
         const suffix = `${window.location.search}${window.location.hash}`;
@@ -80,5 +91,62 @@ const zhPath = alternatePath(pathname, 'zh');
       <slot />
     </main>
     {!noFooter && <Footer locale={locale} />}
+    <script>
+      let cardRevealObserver: IntersectionObserver | undefined;
+
+      const revealCards = () => {
+        cardRevealObserver?.disconnect();
+        cardRevealObserver = undefined;
+
+        const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal-card]'));
+        if (!cards.length) return;
+
+        const canAnimate = 'IntersectionObserver' in window
+          && window.matchMedia('(min-width: 768px) and (pointer: fine)').matches
+          && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (!canAnimate) {
+          cards.forEach((card) => card.classList.add('is-revealed'));
+          return;
+        }
+
+        document.documentElement.classList.add('reveal-cards-enabled', 'reveal-cards-initialized');
+        const observer = new IntersectionObserver((entries) => {
+          if (!entries.some((entry) => entry.isIntersecting)) return;
+
+          const visible = cards
+            .filter((card) => !card.classList.contains('is-revealed'))
+            .filter((card) => {
+              const rect = card.getBoundingClientRect();
+              return rect.bottom > 0 && rect.top < window.innerHeight * .92;
+            })
+            .sort((a, b) => {
+              const verticalOrder = a.getBoundingClientRect().top - b.getBoundingClientRect().top;
+              if (Math.abs(verticalOrder) > 1) return verticalOrder;
+              return Number(a.dataset.revealOrder ?? 0) - Number(b.dataset.revealOrder ?? 0);
+            });
+
+          visible.forEach((card, index) => {
+            card.style.setProperty('--reveal-delay', `${index * 40}ms`);
+            card.classList.add('is-revealed');
+            observer.unobserve(card);
+          });
+        }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+
+        cardRevealObserver = observer;
+        cards.forEach((card) => observer.observe(card));
+      };
+
+      revealCards();
+      window.addEventListener('pageshow', (event) => {
+        if (!event.persisted) return;
+        document.documentElement.classList.remove('reveal-cards-enabled');
+        document.querySelectorAll<HTMLElement>('[data-reveal-card]').forEach((card) => {
+          card.classList.remove('is-revealed');
+          card.style.removeProperty('--reveal-delay');
+        });
+        window.requestAnimationFrame(revealCards);
+      });
+    </script>
   </body>
 </html>

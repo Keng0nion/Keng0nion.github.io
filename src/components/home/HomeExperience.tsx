@@ -17,6 +17,12 @@ export type LocalizedHomeText =
   | string
   | Readonly<Partial<Record<HomeLocale, string>>>;
 
+export interface PhilosophyLine {
+  start: string;
+  highlight: string;
+  end: string;
+}
+
 export interface HomeExperienceCopy {
   system: string;
   scroll: string;
@@ -25,7 +31,7 @@ export interface HomeExperienceCopy {
   featuredBody: string;
   viewProject: string;
   philosophyEyebrow: string;
-  philosophy: readonly string[];
+  philosophy: readonly PhilosophyLine[];
   philosophyBody: string;
   allProjects: string;
   bootLines?: readonly string[];
@@ -186,6 +192,7 @@ type GlyphStyle = CSSProperties & {
 type ProjectStyle = CSSProperties & {
   '--project-accent': string;
   '--project-accent-rgb': string;
+  '--reveal-delay': string;
 };
 
 interface CanvasParticle {
@@ -1207,23 +1214,34 @@ function ProjectPanel({
   copy,
   href,
   position,
+  revealed,
+  elementRef,
 }: {
   project: HomeFeaturedProject;
   locale: HomeLocale;
   copy: Readonly<HomeExperienceCopy>;
   href: string;
   position: number;
+  revealed: boolean;
+  elementRef: (node: HTMLElement | null) => void;
 }) {
   const [accent, accentRgb] = accentMap[project.accent ?? 'lime'] ?? accentMap.lime;
   const style: ProjectStyle = {
     '--project-accent': accent,
     '--project-accent-rgb': accentRgb,
+    '--reveal-delay': '0ms',
   };
 
   const indexLabel = project.index ?? String(position + 1).padStart(2, '0');
 
   return (
-    <article className="hx-project" style={style} data-index={indexLabel}>
+    <article
+      ref={elementRef}
+      className={`hx-project hx-reveal-card${revealed ? ' is-revealed' : ''}`}
+      style={style}
+      data-index={indexLabel}
+      data-reveal-position={position}
+    >
       <div className="hx-project__grid" aria-hidden="true" />
       <div className="hx-project__signal" aria-hidden="true">
         <span />
@@ -1267,14 +1285,96 @@ export default function HomeExperience({
   const mobile = useMediaQuery('(max-width: 767px), (pointer: coarse)');
   const heroRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const projectRefs = useRef<Array<HTMLElement | null>>([]);
+  const philosophyRef = useRef<HTMLElement>(null);
+  const [revealedProjects, setRevealedProjects] = useState<ReadonlySet<number>>(() => new Set());
+  const [cardRevealReady, setCardRevealReady] = useState(false);
+  const [philosophyArmed, setPhilosophyArmed] = useState(false);
+  const [philosophyRevealed, setPhilosophyRevealed] = useState(false);
+  const [revealCycle, setRevealCycle] = useState(0);
   const active = bootPhase === 'hidden';
   const projectsNav = nav.find((item) => item.id === 'projects') ?? nav[1];
   const resolvedProjectsHref = projectsHref ?? projectsNav?.href ?? '/projects/';
   const projects = featuredProjects.slice(0, 2);
   const defaults = copyDefaults[locale];
 
+  useEffect(() => {
+    const replayOnRestore = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      setRevealedProjects(new Set());
+      setCardRevealReady(false);
+      setPhilosophyArmed(false);
+      setPhilosophyRevealed(false);
+      setRevealCycle((cycle) => cycle + 1);
+    };
+
+    window.addEventListener('pageshow', replayOnRestore);
+    return () => window.removeEventListener('pageshow', replayOnRestore);
+  }, []);
+
+  useEffect(() => {
+    if (mobile || reducedMotion || !('IntersectionObserver' in window)) {
+      setCardRevealReady(false);
+      setRevealedProjects(new Set(projects.map((_, index) => index)));
+      return;
+    }
+
+    setCardRevealReady(true);
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => {
+          const verticalOrder = a.boundingClientRect.top - b.boundingClientRect.top;
+          if (Math.abs(verticalOrder) > 1) return verticalOrder;
+          return Number((a.target as HTMLElement).dataset.revealPosition ?? 0)
+            - Number((b.target as HTMLElement).dataset.revealPosition ?? 0);
+        });
+
+      if (!visible.length) return;
+
+      const positions = visible.map((entry, stagger) => {
+        const element = entry.target as HTMLElement;
+        element.style.setProperty('--reveal-delay', `${stagger * 40}ms`);
+        observer.unobserve(element);
+        return Number(element.dataset.revealPosition);
+      });
+
+      setRevealedProjects((current) => {
+        const next = new Set(current);
+        positions.forEach((position) => next.add(position));
+        return next;
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+
+    projectRefs.current.forEach((element) => {
+      if (element) observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+  }, [mobile, projects.length, reducedMotion, revealCycle]);
+
+  useEffect(() => {
+    if (reducedMotion) {
+      setPhilosophyRevealed(true);
+      return;
+    }
+
+    const element = philosophyRef.current;
+    if (!element) return;
+
+    setPhilosophyArmed(true);
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry?.isIntersecting) return;
+      setPhilosophyRevealed(true);
+      observer.disconnect();
+    }, { threshold: 0.28, rootMargin: '0px 0px -10% 0px' });
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [reducedMotion, revealCycle]);
+
   return (
-    <div className="hx-home">
+    <div className={`hx-home${cardRevealReady ? ' is-card-reveal-ready' : ''}`}>
       <BootSequence
         locale={locale}
         copy={homeCopy}
@@ -1350,20 +1450,30 @@ export default function HomeExperience({
               copy={homeCopy}
               href={projectHref(project, resolvedProjectsHref)}
               position={index}
+              revealed={revealedProjects.has(index)}
+              elementRef={(node) => { projectRefs.current[index] = node; }}
               key={project.slug}
             />
           ))}
         </div>
       </section>
 
-      <section className="hx-philosophy" aria-labelledby="philosophy-title">
+      <section
+        ref={philosophyRef}
+        className={`hx-philosophy${philosophyArmed ? ' is-armed' : ''}${philosophyRevealed ? ' is-revealed' : ''}`}
+        aria-labelledby="philosophy-title"
+      >
         <div className="hx-philosophy__matrix" aria-hidden="true">
           <span>CURIOUS</span><span>FAIL</span><span>LEARN</span><span>REFINE</span>
         </div>
         <div className="hx-philosophy__inner">
           <p className="hx-philosophy__eyebrow">{homeCopy.philosophyEyebrow}</p>
           <blockquote id="philosophy-title">
-            {homeCopy.philosophy.map((line) => <span key={line}>{line}</span>)}
+            {homeCopy.philosophy.map((line) => (
+              <span className="hx-philosophy__line" key={line.highlight}>
+                {line.start}<strong>{line.highlight}</strong>{line.end}
+              </span>
+            ))}
           </blockquote>
           <p className="hx-philosophy__body">{homeCopy.philosophyBody}</p>
           <a className="hx-philosophy__link" href={resolvedProjectsHref}>

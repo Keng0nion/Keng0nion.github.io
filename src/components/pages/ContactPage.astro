@@ -32,7 +32,7 @@ const githubNote = locale === 'en'
 
   <section class="container" aria-label={copy.eyebrow}>
     <div class="contact-layout">
-      <a class="contact-card" href={`mailto:${SITE.email}`}>
+      <a class="contact-card" href={`mailto:${SITE.email}`} data-reveal-card data-reveal-order="0">
         <div>
           <span class="contact-icon">01 // {copy.email}</span>
           <h2>{SITE.email}</h2>
@@ -41,7 +41,7 @@ const githubNote = locale === 'en'
         <span class="contact-arrow" aria-hidden="true">↗</span>
       </a>
 
-      <a class="contact-card" href={SITE.github} target="_blank" rel="noreferrer">
+      <a class="contact-card" href={SITE.github} target="_blank" rel="noreferrer" data-reveal-card data-reveal-order="1">
         <div>
           <span class="contact-icon">02 // {copy.github}</span>
           <h2>Keng0nion</h2>

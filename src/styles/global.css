@@ -234,6 +234,25 @@ img, svg, canvas { display: block; max-width: 100%; }
 .footer-links a { display: inline-flex; min-width: 2.75rem; min-height: 2.75rem; align-items: center; justify-content: center; }
 .footer-links a:hover { color: var(--lime); }
 
+@media (min-width: 768px) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .reveal-cards-enabled [data-reveal-card] {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  .reveal-cards-enabled [data-reveal-card].is-revealed {
+    animation: card-reveal-glitch 220ms cubic-bezier(.2, .72, .25, 1) var(--reveal-delay, 0ms) both;
+  }
+}
+
+@keyframes card-reveal-glitch {
+  0% { opacity: 0; transform: translateY(8px) skewX(0deg); filter: brightness(1); }
+  32% { opacity: .68; transform: translate(1px, 4px) skewX(-.35deg); filter: brightness(1.16); }
+  51% { opacity: .88; transform: translate(-1px, 2px) skewX(.2deg); filter: brightness(.94); }
+  72% { opacity: 1; transform: translateY(1px) skewX(0deg); filter: brightness(1.04); }
+  100% { opacity: 1; transform: none; filter: none; }
+}
+
 .project-grid { display: grid; gap: 1px; border: 1px solid var(--line); background: var(--line); margin-bottom: clamp(5rem, 10vw, 9rem); }
 .project-card { position: relative; min-height: 23rem; padding: clamp(1.5rem, 4vw, 3.2rem); background: var(--bg-elevated); overflow: hidden; }
 .project-card::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 85% 10%, var(--project-glow, rgba(156,255,0,.13)), transparent 38%); opacity: .6; transition: opacity .3s ease, transform .5s ease; }

@@ -43,10 +43,12 @@ const accentGlows: Record<Project['accent'], string> = {
 
   <section class="container" aria-label={copy.eyebrow}>
     <div class="project-grid">
-      {projects.map((project) => (
+      {projects.map((project, index) => (
         <article
           class="project-card"
           style={`--project-glow: ${accentGlows[project.accent]};`}
+          data-reveal-card
+          data-reveal-order={index}
         >
           <div class="project-card-top">
             <span class="project-number">{project.index}</span>

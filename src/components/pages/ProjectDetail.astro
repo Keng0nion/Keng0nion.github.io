@@ -54,17 +54,17 @@ const labels = copy[locale];
 
   <section class="container detail-shell">
     <aside class="detail-meta" aria-label={locale === 'en' ? 'Project metadata' : '项目元数据'}>
-      <div class="meta-cell">
+      <div class="meta-cell" data-reveal-card data-reveal-order="0">
         <span class="meta-label">{labels.status}</span>
         <span class:list={['status', { 'in-development': project.status === 'in-development' }]}> 
           {statusLabels[locale][project.status]}
         </span>
       </div>
-      <div class="meta-cell">
+      <div class="meta-cell" data-reveal-card data-reveal-order="1">
         <span class="meta-label">{labels.focus}</span>
         <span>{project.kicker[locale]}</span>
       </div>
-      <div class="meta-cell">
+      <div class="meta-cell" data-reveal-card data-reveal-order="2">
         <span class="meta-label">{labels.record}</span>
         <span class="mono">PROJECT // {project.index}</span>
       </div>

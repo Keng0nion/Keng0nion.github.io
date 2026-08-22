@@ -51,8 +51,8 @@ const copy = pageCopy.about[locale];
         <h2 class="display-title">{copy.timelineTitle}</h2>
       </div>
       <div class="timeline-list">
-        {timeline.map((item) => (
-          <article class="timeline-item">
+        {timeline.map((item, index) => (
+          <article class="timeline-item" data-reveal-card data-reveal-order={index}>
             <span class="timeline-year">{item.year}</span>
             <h3>{item.title[locale]}</h3>
             <p>{item.body[locale]}</p>
