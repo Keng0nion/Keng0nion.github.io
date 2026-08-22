@@ -241,16 +241,13 @@ img, svg, canvas { display: block; max-width: 100%; }
   }
 
   .reveal-cards-enabled [data-reveal-card].is-revealed {
-    animation: card-reveal-glitch 220ms cubic-bezier(.2, .72, .25, 1) var(--reveal-delay, 0ms) both;
+    animation: card-reveal 220ms cubic-bezier(.2, .72, .25, 1) var(--reveal-delay, 0ms) both;
   }
 }
 
-@keyframes card-reveal-glitch {
-  0% { opacity: 0; transform: translateY(8px) skewX(0deg); filter: brightness(1); }
-  32% { opacity: .68; transform: translate(1px, 4px) skewX(-.35deg); filter: brightness(1.16); }
-  51% { opacity: .88; transform: translate(-1px, 2px) skewX(.2deg); filter: brightness(.94); }
-  72% { opacity: 1; transform: translateY(1px) skewX(0deg); filter: brightness(1.04); }
-  100% { opacity: 1; transform: none; filter: none; }
+@keyframes card-reveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .project-grid { display: grid; gap: 1px; border: 1px solid var(--line); background: var(--line); margin-bottom: clamp(5rem, 10vw, 9rem); }

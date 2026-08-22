@@ -693,7 +693,7 @@
   }
 
   .hx-home.is-card-reveal-ready .hx-reveal-card.is-revealed {
-    animation: hx-card-reveal-glitch 220ms cubic-bezier(.2, .72, .25, 1) var(--reveal-delay, 0ms) both;
+    animation: hx-card-reveal 220ms cubic-bezier(.2, .72, .25, 1) var(--reveal-delay, 0ms) both;
   }
 }
 
@@ -973,6 +973,7 @@
 
 .hx-philosophy.is-armed .hx-philosophy__line {
   opacity: 0;
+  translate: 0 8px;
 }
 
 .hx-philosophy.is-armed.is-revealed .hx-philosophy__line {
@@ -1018,18 +1019,14 @@
   text-shadow: 0 0 1rem var(--hx-green);
 }
 
-@keyframes hx-card-reveal-glitch {
-  0% { opacity: 0; transform: translateY(8px) skewX(0deg); filter: brightness(1); }
-  32% { opacity: .68; transform: translate(1px, 4px) skewX(-.35deg); filter: brightness(1.16); }
-  51% { opacity: .88; transform: translate(-1px, 2px) skewX(.2deg); filter: brightness(.94); }
-  72% { opacity: 1; transform: translateY(1px) skewX(0deg); filter: brightness(1.04); }
-  100% { opacity: 1; transform: none; filter: none; }
+@keyframes hx-card-reveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes hx-philosophy-line-in {
-  0% { opacity: 0; translate: -1.15rem 0; filter: blur(3px) brightness(1.35); }
-  38% { opacity: .72; translate: .16rem 0; filter: blur(0) brightness(1.12); }
-  100% { opacity: 1; translate: 0; filter: none; }
+  from { opacity: 0; translate: 0 8px; }
+  to { opacity: 1; translate: 0; }
 }
 
 @keyframes hx-boot-flicker {
