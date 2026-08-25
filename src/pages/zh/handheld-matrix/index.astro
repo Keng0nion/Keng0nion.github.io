@@ -1,0 +1,15 @@
+---
+import HandheldMatrix from '../../../components/handheld/HandheldMatrix';
+import { handheldDevices } from '../../../data/handheldDevices';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+
+const locale = 'zh' as const;
+---
+
+<BaseLayout
+  locale={locale}
+  title="Handheld Matrix"
+  description="一个可通过 GitHub Pages 发布的掌机设备筛选、推荐与对比工具。"
+>
+  <HandheldMatrix client:load locale={locale} devices={handheldDevices} />
+</BaseLayout>

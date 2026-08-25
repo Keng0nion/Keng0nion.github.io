@@ -1,0 +1,15 @@
+---
+import HandheldMatrix from '../../components/handheld/HandheldMatrix';
+import { handheldDevices } from '../../data/handheldDevices';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const locale = 'en' as const;
+---
+
+<BaseLayout
+  locale={locale}
+  title="Handheld Matrix"
+  description="A GitHub Pages-ready handheld gaming device selector for filtering, ranking, and comparing handhelds."
+>
+  <HandheldMatrix client:load locale={locale} devices={handheldDevices} />
+</BaseLayout>
