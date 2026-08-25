@@ -129,6 +129,7 @@ interface GlobeApi {
   renderer(): {
     domElement: HTMLCanvasElement;
     capabilities: { getMaxAnisotropy(): number };
+    setPixelRatio(pixelRatio: number): void;
   };
   lights(lights: unknown[]): unknown;
   getGlobeRadius(): number;
@@ -184,6 +185,22 @@ type DynamicGlobe = ComponentType<
 type BootPhase = 'checking' | 'running' | 'exiting' | 'hidden';
 type GlobeStatus = 'checking' | 'loading' | 'ready' | 'unavailable';
 type VisualQuality = 'low' | 'balanced' | 'high' | 'ultra';
+type EarthTextureResolution = '1k' | '2k' | '4k' | '8k';
+
+interface EarthTextureSet {
+  resolution: EarthTextureResolution;
+  day: string;
+  night: string;
+  clouds: string;
+  bump: string;
+  specular: string;
+}
+
+type StaticGlobeStyle = CSSProperties & {
+  '--earth-day-texture': string;
+  '--earth-night-texture': string;
+  '--earth-cloud-texture': string;
+};
 
 type GlyphStyle = CSSProperties & {
   '--glyph-x': string;
@@ -286,6 +303,52 @@ const arcPairs: ReadonlyArray<readonly [number, number]> = [
   [3, 6], [3, 11], [4, 9], [5, 6], [6, 9], [7, 8], [11, 12], [12, 13],
 ];
 
+const earthTextureResolutionOrder: readonly EarthTextureResolution[] = ['1k', '2k', '4k', '8k'];
+const earthTextureResolutionByQuality: Record<VisualQuality, EarthTextureResolution> = {
+  low: '1k',
+  balanced: '2k',
+  high: '4k',
+  ultra: '8k',
+};
+const earthTexturePixelWidth: Record<EarthTextureResolution, number> = {
+  '1k': 1024,
+  '2k': 2048,
+  '4k': 4096,
+  '8k': 8192,
+};
+
+function textureResolutionForQuality(
+  quality: VisualQuality,
+  maxTextureSize = Number.POSITIVE_INFINITY,
+): EarthTextureResolution {
+  const desired = earthTextureResolutionByQuality[quality];
+  const desiredIndex = earthTextureResolutionOrder.indexOf(desired);
+
+  for (let index = desiredIndex; index >= 0; index -= 1) {
+    const resolution = earthTextureResolutionOrder[index];
+    if (earthTexturePixelWidth[resolution] <= maxTextureSize) return resolution;
+  }
+
+  return '1k';
+}
+
+function earthTextureSetForQuality(
+  quality: VisualQuality,
+  maxTextureSize = Number.POSITIVE_INFINITY,
+): EarthTextureSet {
+  const resolution = textureResolutionForQuality(quality, maxTextureSize);
+  const detailResolution = resolution === '8k' ? '4k' : resolution;
+
+  return {
+    resolution,
+    day: `/textures/earth-hd-day-${resolution}.webp`,
+    night: `/textures/earth-hd-night-${resolution}.webp`,
+    clouds: `/textures/earth-hd-clouds-${detailResolution}.webp`,
+    bump: `/textures/earth-hd-bump-${detailResolution}.webp`,
+    specular: `/textures/earth-hd-specular-${detailResolution}.webp`,
+  };
+}
+
 function localize(value: LocalizedHomeText, locale: HomeLocale): string {
   if (typeof value === 'string') return value;
   return value[locale] ?? value.en ?? value.zh ?? '';
@@ -354,15 +417,21 @@ function useElementSize<T extends HTMLElement>() {
   return { ref, size };
 }
 
-function supportsWebGL(): boolean {
+function getWebGLMaxTextureSize(): number {
   try {
     const canvas = document.createElement('canvas');
-    return Boolean(
+    const gl =
       canvas.getContext('webgl2', { failIfMajorPerformanceCaveat: true }) ||
-        canvas.getContext('webgl', { failIfMajorPerformanceCaveat: true }),
-    );
+      canvas.getContext('webgl', { failIfMajorPerformanceCaveat: true });
+
+    if (!gl) return 0;
+
+    const maxTextureSize = Number(gl.getParameter(gl.MAX_TEXTURE_SIZE));
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+
+    return Number.isFinite(maxTextureSize) ? maxTextureSize : 0;
   } catch {
-    return false;
+    return 0;
   }
 }
 
@@ -912,15 +981,23 @@ function StaticEarthFallback({
   locale,
   copy,
   failed,
+  quality,
 }: {
   locale: HomeLocale;
   copy: Readonly<HomeExperienceCopy>;
   failed: boolean;
+  quality: VisualQuality;
 }) {
   const defaults = copyDefaults[locale];
+  const textureSet = earthTextureSetForQuality(quality);
+  const style: StaticGlobeStyle = {
+    '--earth-day-texture': `url('${textureSet.day}')`,
+    '--earth-night-texture': `url('${textureSet.night}')`,
+    '--earth-cloud-texture': `url('${textureSet.clouds}')`,
+  };
 
   return (
-    <div className={`hx-static-globe${failed ? ' is-fallback' : ''}`}>
+    <div className={`hx-static-globe${failed ? ' is-fallback' : ''}`} style={style}>
       <div className="hx-static-globe__sphere" aria-hidden="true">
         <span className="hx-static-globe__clouds" />
       </div>
@@ -982,13 +1059,14 @@ function EarthGlobe({
       ringResolution: number;
       cloudSegments: number;
       anisotropy: number;
+      pixelRatio: number;
       autoRotateSpeed: number;
       loadWebGlOnMobile: boolean;
     }> = {
-      low: { arcCount: 4, globeResolution: 8, pointResolution: 4, ringResolution: 24, cloudSegments: 32, anisotropy: 2, autoRotateSpeed: 0.12, loadWebGlOnMobile: false },
-      balanced: { arcCount: 11, globeResolution: 5, pointResolution: 8, ringResolution: 64, cloudSegments: 80, anisotropy: 8, autoRotateSpeed: 0.24, loadWebGlOnMobile: false },
-      high: { arcCount: 14, globeResolution: 4, pointResolution: 12, ringResolution: 96, cloudSegments: 112, anisotropy: 12, autoRotateSpeed: 0.36, loadWebGlOnMobile: false },
-      ultra: { arcCount: 16, globeResolution: 3, pointResolution: 16, ringResolution: 128, cloudSegments: 144, anisotropy: 16, autoRotateSpeed: 0.52, loadWebGlOnMobile: true },
+      low: { arcCount: 4, globeResolution: 8, pointResolution: 4, ringResolution: 24, cloudSegments: 32, anisotropy: 2, pixelRatio: 1.15, autoRotateSpeed: 0.12, loadWebGlOnMobile: false },
+      balanced: { arcCount: 11, globeResolution: 5, pointResolution: 8, ringResolution: 64, cloudSegments: 80, anisotropy: 8, pixelRatio: 1.5, autoRotateSpeed: 0.24, loadWebGlOnMobile: false },
+      high: { arcCount: 14, globeResolution: 3.5, pointResolution: 12, ringResolution: 96, cloudSegments: 112, anisotropy: 12, pixelRatio: 1.75, autoRotateSpeed: 0.36, loadWebGlOnMobile: false },
+      ultra: { arcCount: 16, globeResolution: 2.5, pointResolution: 16, ringResolution: 128, cloudSegments: 160, anisotropy: 16, pixelRatio: 2, autoRotateSpeed: 0.52, loadWebGlOnMobile: true },
     };
     return profiles[quality];
   }, [quality]);
@@ -1068,23 +1146,28 @@ function EarthGlobe({
 
   useEffect(() => {
     if (!loadRequested) return;
-    if (!supportsWebGL()) {
+
+    const maxTextureSize = getWebGLMaxTextureSize();
+    if (!maxTextureSize) {
       setStatus('unavailable');
       return;
     }
 
+    const textureSet = earthTextureSetForQuality(quality, maxTextureSize);
     let cancelled = false;
     setStatus('loading');
+    setMaterial(null);
 
     void Promise.all([import('react-globe.gl'), import('three')])
       .then(async ([globeModule, THREE]) => {
         const loader = new THREE.TextureLoader();
-        const [dayTexture, normalTexture, nightTexture, cloudTexture] =
+        const [dayTexture, nightTexture, cloudTexture, bumpTexture, specularTexture] =
           await Promise.all([
-            loader.loadAsync('/textures/earth-day.webp'),
-            loader.loadAsync('/textures/earth-normal.webp'),
-            loader.loadAsync('/textures/earth-night.webp'),
-            loader.loadAsync('/textures/earth-clouds.webp'),
+            loader.loadAsync(textureSet.day),
+            loader.loadAsync(textureSet.night),
+            loader.loadAsync(textureSet.clouds),
+            loader.loadAsync(textureSet.bump),
+            loader.loadAsync(textureSet.specular),
           ]);
 
         dayTexture.colorSpace = THREE.SRGBColorSpace;
@@ -1093,26 +1176,28 @@ function EarthGlobe({
 
         const globeMaterial = new THREE.MeshPhongMaterial({
           map: dayTexture,
-          normalMap: normalTexture,
-          normalScale: new THREE.Vector2(0.72, 0.72),
+          bumpMap: bumpTexture,
+          bumpScale: textureSet.resolution === '8k' ? 0.045 : 0.035,
           emissiveMap: nightTexture,
           emissive: new THREE.Color('#8dff70'),
-          emissiveIntensity: 0.42,
-          shininess: 18,
-          specular: new THREE.Color('#61786b'),
+          emissiveIntensity: 0.36,
+          specularMap: specularTexture,
+          shininess: textureSet.resolution === '8k' ? 28 : 22,
+          specular: new THREE.Color('#8aa092'),
         });
 
         if (cancelled) {
           globeMaterial.dispose();
           dayTexture.dispose();
-          normalTexture.dispose();
           nightTexture.dispose();
           cloudTexture.dispose();
+          bumpTexture.dispose();
+          specularTexture.dispose();
           return;
         }
 
         runtimeRef.current = THREE;
-        textureRef.current = [dayTexture, normalTexture, nightTexture, cloudTexture];
+        textureRef.current = [dayTexture, nightTexture, cloudTexture, bumpTexture, specularTexture];
         materialRef.current = globeMaterial;
         setMaterial(globeMaterial);
         setGlobeComponent(() => globeModule.default as DynamicGlobe);
@@ -1136,7 +1221,7 @@ function EarthGlobe({
       textureRef.current.forEach((texture) => texture.dispose());
       textureRef.current = [];
     };
-  }, [loadRequested]);
+  }, [loadRequested, quality]);
 
   const configureGlobe = useCallback(() => {
     const globe = globeRef.current;
@@ -1191,6 +1276,7 @@ function EarthGlobe({
 
     configureGlobe();
     const renderer = globe.renderer();
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, qualityProfile.pixelRatio));
     const maxAnisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), qualityProfile.anisotropy);
     textureRef.current.forEach((texture) => {
       texture.anisotropy = maxAnisotropy;
@@ -1210,7 +1296,7 @@ function EarthGlobe({
         qualityProfile.cloudSegments,
         qualityProfile.cloudSegments,
       );
-      const cloudTexture = textureRef.current[3];
+      const cloudTexture = textureRef.current[2];
       const cloudMaterial = new THREE.MeshPhongMaterial({
         map: cloudTexture,
         alphaMap: cloudTexture,
@@ -1249,7 +1335,7 @@ function EarthGlobe({
     if (active && useWebGlOnDevice && !document.hidden) globe.resumeAnimation();
     else globe.pauseAnimation();
     setStatus('ready');
-  }, [active, configureGlobe, qualityProfile.anisotropy, qualityProfile.cloudSegments, reducedMotion, useWebGlOnDevice]);
+  }, [active, configureGlobe, qualityProfile.anisotropy, qualityProfile.cloudSegments, qualityProfile.pixelRatio, reducedMotion, useWebGlOnDevice]);
 
   const failed = status === 'unavailable';
   const showWebGL = status === 'ready' && useWebGlOnDevice;
@@ -1261,6 +1347,7 @@ function EarthGlobe({
         locale={locale}
         copy={copy}
         failed={failed && useWebGlOnDevice}
+        quality={quality}
       />
       {GlobeComponent !== null && material !== null && !failed && useWebGlOnDevice && (
         <div className="hx-globe__renderer" aria-hidden="true">

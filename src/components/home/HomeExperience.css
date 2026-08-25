@@ -348,7 +348,7 @@ html.skip-home-boot .hx-boot {
   background-image:
     radial-gradient(circle at 67% 70%, transparent 0 46%, rgba(0, 0, 0, .8) 76%),
     radial-gradient(circle at 27% 24%, rgba(255, 255, 255, .25), transparent 18%),
-    url('/textures/earth-day.webp');
+    var(--earth-day-texture, url('/textures/earth-day.webp'));
   background-position: center, center, center;
 }
 
@@ -364,7 +364,7 @@ html.skip-home-boot .hx-boot {
 }
 
 .hx-home.is-experience-active .hx-static-globe__sphere::before {
-  background: url('/textures/earth-night.webp') center / cover;
+  background: var(--earth-night-texture, url('/textures/earth-night.webp')) center / cover;
 }
 
 .hx-static-globe__clouds {
@@ -378,7 +378,7 @@ html.skip-home-boot .hx-boot {
 }
 
 .hx-home.is-experience-active .hx-static-globe__clouds {
-  background: url('/textures/earth-clouds.webp') center / cover;
+  background: var(--earth-cloud-texture, url('/textures/earth-clouds.webp')) center / cover;
 }
 
 .hx-static-globe.is-fallback .hx-static-globe__sphere::after {
