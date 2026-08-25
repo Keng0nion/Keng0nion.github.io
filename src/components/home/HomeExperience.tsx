@@ -183,6 +183,7 @@ type DynamicGlobe = ComponentType<
 
 type BootPhase = 'checking' | 'running' | 'exiting' | 'hidden';
 type GlobeStatus = 'checking' | 'loading' | 'ready' | 'unavailable';
+type VisualQuality = 'low' | 'balanced' | 'high' | 'ultra';
 
 type GlyphStyle = CSSProperties & {
   '--glyph-x': string;
@@ -288,6 +289,30 @@ const arcPairs: ReadonlyArray<readonly [number, number]> = [
 function localize(value: LocalizedHomeText, locale: HomeLocale): string {
   if (typeof value === 'string') return value;
   return value[locale] ?? value.en ?? value.zh ?? '';
+}
+
+function useSiteVisualQuality(): VisualQuality {
+  const readQuality = (): VisualQuality => {
+    if (typeof document === 'undefined') return 'balanced';
+    const value = document.documentElement.dataset.visualQuality;
+    if (value === 'low' || value === 'balanced' || value === 'high' || value === 'ultra') return value;
+    return 'balanced';
+  };
+
+  const [quality, setQuality] = useState<VisualQuality>(readQuality);
+
+  useEffect(() => {
+    const update = (event?: Event) => {
+      const customEvent = event as CustomEvent<{ quality?: VisualQuality }> | undefined;
+      const next = customEvent?.detail?.quality ?? readQuality();
+      setQuality(next);
+    };
+    update();
+    window.addEventListener('keng0nion:settings-change', update);
+    return () => window.removeEventListener('keng0nion:settings-change', update);
+  }, []);
+
+  return quality;
 }
 
 function useMediaQuery(query: string): boolean {
@@ -915,12 +940,14 @@ function EarthGlobe({
   active,
   mobile,
   reducedMotion,
+  quality,
 }: {
   locale: HomeLocale;
   copy: Readonly<HomeExperienceCopy>;
   active: boolean;
   mobile: boolean;
   reducedMotion: boolean;
+  quality: VisualQuality;
 }) {
   const { ref: hostRef, size } = useElementSize<HTMLDivElement>();
   const globeRef = useRef<GlobeApi>(null);
@@ -947,9 +974,30 @@ function EarthGlobe({
   mobileRef.current = mobile;
   reducedRef.current = reducedMotion;
 
+  const qualityProfile = useMemo(() => {
+    const profiles: Record<VisualQuality, {
+      arcCount: number;
+      globeResolution: number;
+      pointResolution: number;
+      ringResolution: number;
+      cloudSegments: number;
+      anisotropy: number;
+      autoRotateSpeed: number;
+      loadWebGlOnMobile: boolean;
+    }> = {
+      low: { arcCount: 4, globeResolution: 8, pointResolution: 4, ringResolution: 24, cloudSegments: 32, anisotropy: 2, autoRotateSpeed: 0.12, loadWebGlOnMobile: false },
+      balanced: { arcCount: 11, globeResolution: 5, pointResolution: 8, ringResolution: 64, cloudSegments: 80, anisotropy: 8, autoRotateSpeed: 0.24, loadWebGlOnMobile: false },
+      high: { arcCount: 14, globeResolution: 4, pointResolution: 12, ringResolution: 96, cloudSegments: 112, anisotropy: 12, autoRotateSpeed: 0.36, loadWebGlOnMobile: false },
+      ultra: { arcCount: 16, globeResolution: 3, pointResolution: 16, ringResolution: 128, cloudSegments: 144, anisotropy: 16, autoRotateSpeed: 0.52, loadWebGlOnMobile: true },
+    };
+    return profiles[quality];
+  }, [quality]);
+
+  const useWebGlOnDevice = !reducedMotion && (!mobile || qualityProfile.loadWebGlOnMobile);
+
   const nodes = useMemo(
-    () => (mobile ? allNodes.slice(0, 7) : allNodes),
-    [mobile],
+    () => (mobile && quality !== 'ultra' ? allNodes.slice(0, quality === 'low' ? 5 : 7) : allNodes),
+    [mobile, quality],
   );
 
   const allArcs = useMemo<GlobeArc[]>(
@@ -976,20 +1024,20 @@ function EarthGlobe({
   );
 
   const arcs = useMemo(() => {
-    const count = mobile ? 5 : 11;
+    const count = mobile && quality !== 'ultra' ? Math.min(qualityProfile.arcCount, 6) : qualityProfile.arcCount;
     return Array.from(
       { length: count },
       (_, index) => allArcs[(index + arcOffset) % allArcs.length],
     );
-  }, [allArcs, arcOffset, mobile]);
+  }, [allArcs, arcOffset, mobile, quality, qualityProfile.arcCount]);
 
   useEffect(() => {
-    if (reducedMotion || mobile || !active) return;
+    if (reducedMotion || !useWebGlOnDevice || !active) return;
     const interval = window.setInterval(() => {
       if (!document.hidden) setArcOffset((offset) => (offset + 1) % allArcs.length);
-    }, mobile ? 5200 : 3900);
+    }, quality === 'ultra' ? 2600 : quality === 'high' ? 3200 : 3900);
     return () => window.clearInterval(interval);
-  }, [active, allArcs.length, mobile, reducedMotion]);
+  }, [active, allArcs.length, quality, reducedMotion, useWebGlOnDevice]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -1007,16 +1055,16 @@ function EarthGlobe({
   }, [hostRef]);
 
   useEffect(() => {
-    if (loadRequested || !active || !inView || mobile || reducedMotion) return;
+    if (loadRequested || !active || !inView || !useWebGlOnDevice) return;
 
     const timer = window.setTimeout(() => {
-      if (window.matchMedia('(max-width: 767px), (pointer: coarse)').matches) return;
+      if (!qualityProfile.loadWebGlOnMobile && window.matchMedia('(max-width: 767px), (pointer: coarse)').matches) return;
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       setLoadRequested(true);
     }, 250);
 
     return () => window.clearTimeout(timer);
-  }, [active, inView, loadRequested, mobile, reducedMotion]);
+  }, [active, inView, loadRequested, qualityProfile.loadWebGlOnMobile, useWebGlOnDevice]);
 
   useEffect(() => {
     if (!loadRequested) return;
@@ -1096,24 +1144,24 @@ function EarthGlobe({
     const controls = globe.controls();
     controls.enableZoom = false;
     controls.enablePan = false;
-    controls.enableRotate = !mobile && !reducedMotion;
-    controls.autoRotate = active && !mobile && !reducedMotion;
-    controls.autoRotateSpeed = mobile ? 0.52 : 0.24;
+    controls.enableRotate = useWebGlOnDevice;
+    controls.autoRotate = active && useWebGlOnDevice;
+    controls.autoRotateSpeed = mobile ? qualityProfile.autoRotateSpeed * 1.35 : qualityProfile.autoRotateSpeed;
     controls.enableDamping = true;
     controls.dampingFactor = 0.06;
     globe.pointOfView(
       { lat: 20, lng: mobile ? 128 : 142, altitude: mobile ? 1.92 : 1.66 },
       reducedMotion ? 0 : 700,
     );
-  }, [active, mobile, reducedMotion]);
+  }, [active, mobile, qualityProfile.autoRotateSpeed, reducedMotion, useWebGlOnDevice]);
 
   useEffect(() => {
     const globe = globeRef.current;
     if (!globe) return;
     configureGlobe();
-    if (active && !mobile && !reducedMotion && !document.hidden) globe.resumeAnimation();
+    if (active && useWebGlOnDevice && !document.hidden) globe.resumeAnimation();
     else globe.pauseAnimation();
-  }, [active, configureGlobe, mobile, reducedMotion]);
+  }, [active, configureGlobe, useWebGlOnDevice]);
 
   useEffect(() => {
     const onVisibility = () => {
@@ -1122,7 +1170,6 @@ function EarthGlobe({
       if (
         document.hidden ||
         !activeRef.current ||
-        mobileRef.current ||
         reducedRef.current
       ) globe.pauseAnimation();
       else globe.resumeAnimation();
@@ -1130,7 +1177,6 @@ function EarthGlobe({
       controls.autoRotate =
         !document.hidden &&
         activeRef.current &&
-        !mobileRef.current &&
         !reducedRef.current;
     };
 
@@ -1145,7 +1191,7 @@ function EarthGlobe({
 
     configureGlobe();
     const renderer = globe.renderer();
-    const maxAnisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
+    const maxAnisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), qualityProfile.anisotropy);
     textureRef.current.forEach((texture) => {
       texture.anisotropy = maxAnisotropy;
       texture.needsUpdate = true;
@@ -1161,8 +1207,8 @@ function EarthGlobe({
     if (!cloudResource.current) {
       const geometry = new THREE.SphereGeometry(
         globe.getGlobeRadius() * 1.008,
-        mobile ? 48 : 80,
-        mobile ? 48 : 80,
+        qualityProfile.cloudSegments,
+        qualityProfile.cloudSegments,
       );
       const cloudTexture = textureRef.current[3];
       const cloudMaterial = new THREE.MeshPhongMaterial({
@@ -1183,7 +1229,6 @@ function EarthGlobe({
         if (
           !document.hidden &&
           activeRef.current &&
-          !mobileRef.current &&
           !reducedRef.current
         ) {
           cloudMesh.rotation.y += delta * 0.012;
@@ -1201,13 +1246,13 @@ function EarthGlobe({
     contextLostCleanup.current = () =>
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
 
-    if (active && !mobile && !reducedMotion && !document.hidden) globe.resumeAnimation();
+    if (active && useWebGlOnDevice && !document.hidden) globe.resumeAnimation();
     else globe.pauseAnimation();
     setStatus('ready');
-  }, [active, configureGlobe, mobile, reducedMotion]);
+  }, [active, configureGlobe, qualityProfile.anisotropy, qualityProfile.cloudSegments, reducedMotion, useWebGlOnDevice]);
 
   const failed = status === 'unavailable';
-  const showWebGL = status === 'ready' && !mobile && !reducedMotion;
+  const showWebGL = status === 'ready' && useWebGlOnDevice;
   const defaults = copyDefaults[locale];
 
   return (
@@ -1215,9 +1260,9 @@ function EarthGlobe({
       <StaticEarthFallback
         locale={locale}
         copy={copy}
-        failed={failed && !mobile && !reducedMotion}
+        failed={failed && useWebGlOnDevice}
       />
-      {GlobeComponent !== null && material !== null && !failed && !mobile && !reducedMotion && (
+      {GlobeComponent !== null && material !== null && !failed && useWebGlOnDevice && (
         <div className="hx-globe__renderer" aria-hidden="true">
           <GlobeComponent
             ref={globeRef}
@@ -1228,14 +1273,14 @@ function EarthGlobe({
             showAtmosphere
             atmosphereColor="#9cff76"
             atmosphereAltitude={0.18}
-            globeCurvatureResolution={mobile ? 7 : 5}
+            globeCurvatureResolution={qualityProfile.globeResolution}
             pointsData={nodes}
             pointLat="lat"
             pointLng="lng"
             pointColor="color"
             pointAltitude="altitude"
             pointRadius="radius"
-            pointResolution={mobile ? 5 : 8}
+            pointResolution={qualityProfile.pointResolution}
             pointLabel="label"
             pointsMerge={false}
             ringsData={nodes}
@@ -1245,7 +1290,7 @@ function EarthGlobe({
             ringMaxRadius="ringRadius"
             ringPropagationSpeed="ringSpeed"
             ringRepeatPeriod="ringPeriod"
-            ringResolution={mobile ? 32 : 64}
+            ringResolution={qualityProfile.ringResolution}
             arcsData={arcs}
             arcStartLat="startLat"
             arcStartLng="startLng"
@@ -1351,6 +1396,7 @@ export default function HomeExperience({
   const [bootPhase, setBootPhase] = useState<BootPhase>('checking');
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   const mobile = useMediaQuery('(max-width: 767px), (pointer: coarse)');
+  const visualQuality = useSiteVisualQuality();
   const heroRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const projectRefs = useRef<Array<HTMLElement | null>>([]);
@@ -1463,6 +1509,7 @@ export default function HomeExperience({
           active={active}
           mobile={mobile}
           reducedMotion={reducedMotion}
+          quality={visualQuality}
         />
         <GlyphParticleCanvas
           hostRef={heroRef}

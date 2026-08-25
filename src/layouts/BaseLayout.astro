@@ -74,6 +74,15 @@ const zhPath = alternatePath(pathname, 'zh');
           }, 1500);
         }
 
+        const settingsKey = 'keng0nion-site-settings-v1';
+        const settingsRaw = JSON.parse(localStorage.getItem(settingsKey) || '{}');
+        const allowedQualities = ['low', 'balanced', 'high', 'ultra'];
+        const quality = allowedQualities.includes(settingsRaw.quality) ? settingsRaw.quality : 'balanced';
+        const feedbackColor = /^#[0-9a-f]{6}$/i.test(String(settingsRaw.feedbackColor || '')) ? settingsRaw.feedbackColor : '#9cff00';
+        document.documentElement.dataset.visualQuality = quality;
+        document.documentElement.dataset.feedback = settingsRaw.feedbackEnabled ? 'on' : 'off';
+        document.documentElement.style.setProperty('--site-feedback-color', feedbackColor);
+
         const preferred = localStorage.getItem('keng0nion-locale');
         const path = window.location.pathname;
         const suffix = `${window.location.search}${window.location.hash}`;
@@ -142,7 +151,114 @@ const zhPath = alternatePath(pathname, 'zh');
         cards.forEach((card) => observer.observe(card));
       };
 
+      const setupProjectClickFeedback = () => {
+        const pathname = window.location.pathname;
+        const enabledPath = pathname.includes('/projects/')
+          || pathname.includes('/handheld-matrix/')
+          || pathname.includes('/collatz-tree/');
+        if (!enabledPath || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        const canvas = document.createElement('canvas');
+        canvas.className = 'site-click-feedback-canvas';
+        canvas.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(canvas);
+        const context = canvas.getContext('2d');
+        if (!context) return;
+        const glyphs = '01<>/{}[]#$%&*+-=アイウエオカキクケコ';
+        const particles: Array<{x:number;y:number;vx:number;vy:number;life:number;maxLife:number;size:number;char:string;color:string}> = [];
+        let width = 1;
+        let height = 1;
+        let dpr = 1;
+        let frame = 0;
+        let running = false;
+        let last = performance.now();
+
+        const settings = () => ({
+          enabled: document.documentElement.dataset.feedback === 'on',
+          color: getComputedStyle(document.documentElement).getPropertyValue('--site-feedback-color').trim() || '#9cff00',
+        });
+        const resize = () => {
+          width = window.innerWidth;
+          height = window.innerHeight;
+          dpr = Math.min(window.devicePixelRatio || 1, 2);
+          canvas.width = Math.round(width * dpr);
+          canvas.height = Math.round(height * dpr);
+          context.setTransform(dpr, 0, 0, dpr, 0, 0);
+        };
+        const draw = (time: number) => {
+          if (!running) return;
+          const delta = Math.min(0.034, Math.max(0.001, (time - last) / 1000));
+          last = time;
+          context.clearRect(0, 0, width, height);
+          context.textAlign = 'center';
+          context.textBaseline = 'middle';
+          for (let index = particles.length - 1; index >= 0; index -= 1) {
+            const particle = particles[index];
+            particle.life -= delta;
+            if (particle.life <= 0) {
+              particles.splice(index, 1);
+              continue;
+            }
+            particle.vy += 80 * delta;
+            particle.vx *= Math.pow(.7, delta);
+            particle.x += particle.vx * delta;
+            particle.y += particle.vy * delta;
+            const alpha = Math.min(1, particle.life / Math.min(.42, particle.maxLife));
+            context.globalAlpha = alpha;
+            context.fillStyle = particle.color;
+            context.shadowColor = particle.color;
+            context.shadowBlur = 10;
+            context.font = `${particle.size}px var(--mono, monospace)`;
+            context.fillText(particle.char, particle.x, particle.y);
+          }
+          context.globalAlpha = 1;
+          context.shadowBlur = 0;
+          if (particles.length > 0 && !document.hidden) frame = requestAnimationFrame(draw);
+          else running = false;
+        };
+        const start = () => {
+          if (running) return;
+          running = true;
+          last = performance.now();
+          frame = requestAnimationFrame(draw);
+        };
+        const spawn = (event: PointerEvent) => {
+          const current = settings();
+          if (!current.enabled) return;
+          const target = event.target;
+          if (target instanceof Element && target.closest('.site-header, .site-footer, a, button, input, select, textarea, summary')) return;
+          const count = window.matchMedia('(pointer: coarse)').matches ? 14 : 26;
+          for (let index = 0; index < count; index += 1) {
+            const angle = (Math.PI * 2 * index) / count + Math.random() * .45;
+            const speed = 50 + Math.random() * 135;
+            particles.push({
+              x: event.clientX,
+              y: event.clientY,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed - 18,
+              life: .65 + Math.random() * .65,
+              maxLife: 1.3,
+              size: 8 + Math.random() * 9,
+              char: glyphs[Math.floor(Math.random() * glyphs.length)] ?? '0',
+              color: current.color,
+            });
+          }
+          start();
+        };
+        resize();
+        window.addEventListener('resize', resize, { passive: true });
+        window.addEventListener('pointerdown', spawn, { passive: true });
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden) {
+            running = false;
+            cancelAnimationFrame(frame);
+            context.clearRect(0, 0, width, height);
+          }
+        });
+      };
+
       revealCards();
+      setupProjectClickFeedback();
       window.addEventListener('pageshow', (event) => {
         if (!event.persisted) return;
         document.documentElement.classList.remove('reveal-cards-enabled');

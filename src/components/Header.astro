@@ -20,6 +20,27 @@ const normalized = pathname.endsWith('/') ? pathname : `${pathname}/`;
 const isActive = (match: string) => match === pathFor(locale) ? normalized === match : normalized.startsWith(match);
 const otherLocale: Locale = locale === 'en' ? 'zh' : 'en';
 const otherLabel = otherLocale === 'zh' ? '中文' : 'EN';
+const settingsCopy = locale === 'en'
+  ? {
+      title: 'Settings',
+      quality: 'Start-page Earth quality',
+      qualityLow: 'Low',
+      qualityBalanced: 'Balanced',
+      qualityHigh: 'High',
+      qualityUltra: 'Ultra',
+      feedback: 'Project-page click feedback',
+      color: 'Feedback color',
+    }
+  : {
+      title: '设置',
+      quality: '首页地球画质',
+      qualityLow: '低',
+      qualityBalanced: '均衡',
+      qualityHigh: '高',
+      qualityUltra: '极高',
+      feedback: '项目页点击反馈',
+      color: '反馈颜色',
+    }; 
 ---
 <header class:list={['site-header', { 'is-home': home }]} data-site-header>
   <div class="container header-inner">
@@ -34,6 +55,35 @@ const otherLabel = otherLocale === 'zh' ? '中文' : 'EN';
       <a class="language-switch" href={alternatePath(normalized, otherLocale)} data-language-switch data-locale={otherLocale}>
         <span aria-hidden="true">//</span>{otherLabel}
       </a>
+      <details class="site-settings" data-site-settings>
+        <summary aria-label={settingsCopy.title}>{settingsCopy.title}</summary>
+        <div class="settings-panel">
+          <label>
+            <span>{settingsCopy.quality}</span>
+            <select data-setting-quality>
+              <option value="low">{settingsCopy.qualityLow}</option>
+              <option value="balanced">{settingsCopy.qualityBalanced}</option>
+              <option value="high">{settingsCopy.qualityHigh}</option>
+              <option value="ultra">{settingsCopy.qualityUltra}</option>
+            </select>
+          </label>
+          <label class="settings-row">
+            <span>{settingsCopy.feedback}</span>
+            <input type="checkbox" data-setting-feedback />
+          </label>
+          <label>
+            <span>{settingsCopy.color}</span>
+            <input type="color" value="#9cff00" data-setting-color />
+          </label>
+          <div class="settings-colors" aria-label={settingsCopy.color}>
+            <button type="button" data-color-preset="#9cff00" style="--preset-color: #9cff00" aria-label="lime"></button>
+            <button type="button" data-color-preset="#45e8ff" style="--preset-color: #45e8ff" aria-label="cyan"></button>
+            <button type="button" data-color-preset="#ae7bff" style="--preset-color: #ae7bff" aria-label="violet"></button>
+            <button type="button" data-color-preset="#ffbf47" style="--preset-color: #ffbf47" aria-label="amber"></button>
+            <button type="button" data-color-preset="#ff5c88" style="--preset-color: #ff5c88" aria-label="rose"></button>
+          </div>
+        </div>
+      </details>
       <details class="mobile-nav">
         <summary>{locale === 'en' ? 'MENU' : '菜单'}</summary>
         <nav class="mobile-panel" aria-label={locale === 'en' ? 'Mobile navigation' : '移动端导航'}>
@@ -55,4 +105,77 @@ const otherLabel = otherLocale === 'zh' ? '中文' : 'EN';
       if (locale) localStorage.setItem('keng0nion-locale', locale);
     });
   });
+
+  (() => {
+    type VisualQuality = 'low' | 'balanced' | 'high' | 'ultra';
+    interface SiteSettings {
+      quality: VisualQuality;
+      feedbackEnabled: boolean;
+      feedbackColor: string;
+    }
+
+    const key = 'keng0nion-site-settings-v1';
+    const defaults: SiteSettings = {
+      quality: 'balanced',
+      feedbackEnabled: false,
+      feedbackColor: '#9cff00',
+    };
+    const qualityOptions: ReadonlyArray<VisualQuality> = ['low', 'balanced', 'high', 'ultra'];
+    const allowedQualities = new Set<VisualQuality>(qualityOptions);
+    const normalizeColor = (value: unknown) => /^#[0-9a-f]{6}$/i.test(String(value ?? '')) ? String(value) : defaults.feedbackColor;
+    const normalize = (value: unknown): SiteSettings => {
+      const input = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+      return {
+        quality: allowedQualities.has(input.quality as VisualQuality) ? input.quality as VisualQuality : defaults.quality,
+        feedbackEnabled: Boolean(input.feedbackEnabled),
+        feedbackColor: normalizeColor(input.feedbackColor),
+      };
+    };
+    const read = (): SiteSettings => {
+      try {
+        return normalize(JSON.parse(localStorage.getItem(key) ?? '{}'));
+      } catch {
+        return { ...defaults };
+      }
+    };
+    const apply = (settings: SiteSettings) => {
+      document.documentElement.dataset.visualQuality = settings.quality;
+      document.documentElement.dataset.feedback = settings.feedbackEnabled ? 'on' : 'off';
+      document.documentElement.style.setProperty('--site-feedback-color', settings.feedbackColor);
+      window.dispatchEvent(new CustomEvent('keng0nion:settings-change', { detail: settings }));
+    };
+    const write = (patch: Partial<SiteSettings>) => {
+      const next = normalize({ ...read(), ...patch });
+      localStorage.setItem(key, JSON.stringify(next));
+      apply(next);
+      return next;
+    };
+
+    const root = document.querySelector('[data-site-settings]');
+    if (!root) return;
+    const quality = root.querySelector<HTMLSelectElement>('[data-setting-quality]');
+    const feedback = root.querySelector<HTMLInputElement>('[data-setting-feedback]');
+    const color = root.querySelector<HTMLInputElement>('[data-setting-color]');
+    const setForm = (settings: SiteSettings) => {
+      if (quality) quality.value = settings.quality;
+      if (feedback) feedback.checked = settings.feedbackEnabled;
+      if (color) color.value = settings.feedbackColor;
+    };
+
+    const initial = read();
+    setForm(initial);
+    apply(initial);
+
+    quality?.addEventListener('change', () => write({ quality: quality.value as VisualQuality }));
+    feedback?.addEventListener('change', () => write({ feedbackEnabled: feedback.checked }));
+    color?.addEventListener('input', () => write({ feedbackColor: color.value }));
+    root.querySelectorAll('[data-color-preset]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const preset = button.getAttribute('data-color-preset');
+        if (!preset) return;
+        if (color) color.value = preset;
+        write({ feedbackColor: preset });
+      });
+    });
+  })();
 </script>
