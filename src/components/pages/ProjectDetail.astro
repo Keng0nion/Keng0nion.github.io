@@ -21,6 +21,7 @@ const copy = {
     nextStep: 'Next step',
     source: 'View source',
     live: 'Open live project',
+    copyCommand: 'Copy this command',
   },
   zh: {
     eyebrow: '项目档案详情',
@@ -33,6 +34,7 @@ const copy = {
     nextStep: '下一步',
     source: '查看源代码',
     live: '打开在线项目',
+    copyCommand: '复制这条命令',
   },
 } as const;
 const labels = copy[locale];
@@ -101,16 +103,50 @@ const labels = copy[locale];
         </section>
       )}
 
+      {project.quickStartCommand && (
+        <section class="detail-section command-section" aria-labelledby="project-command-heading">
+          <h2 class="eyebrow" id="project-command-heading">{project.quickStartLabel?.[locale] ?? labels.copyCommand}</h2>
+          <pre><code>{project.quickStartCommand[locale]}</code></pre>
+          <button
+            class="command-copy"
+            type="button"
+            data-copy-command
+            data-copy-label={labels.copyCommand}
+            data-copy-done={locale === 'en' ? 'Copied' : '已复制'}
+          >
+            {labels.copyCommand}
+          </button>
+          {project.quickStartNote && <p class="command-note">{project.quickStartNote[locale]}</p>}
+        </section>
+      )}
+
       <div class="detail-actions">
-        <a class="button" href={project.github} target="_blank" rel="noreferrer">
-          {labels.source}
-        </a>
         {project.homepage && (
-          <a class="button secondary" href={project.homepage} target="_blank" rel="noreferrer">
+          <a class="button" href={project.homepage} target="_blank" rel="noreferrer">
             {labels.live}
           </a>
         )}
+        <a class="button secondary" href={project.github} target="_blank" rel="noreferrer">
+          {labels.source}
+        </a>
       </div>
     </div>
   </section>
+  <script>
+    document.querySelectorAll<HTMLButtonElement>('[data-copy-command]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const code = button.closest('.command-section')?.querySelector('code')?.textContent?.trim();
+        if (!code) return;
+        try {
+          await navigator.clipboard.writeText(code);
+          button.textContent = button.dataset.copyDone ?? 'Copied';
+          window.setTimeout(() => {
+            button.textContent = button.dataset.copyLabel ?? 'Copy this command';
+          }, 1600);
+        } catch {
+          button.textContent = code;
+        }
+      });
+    });
+  </script>
 </BaseLayout>

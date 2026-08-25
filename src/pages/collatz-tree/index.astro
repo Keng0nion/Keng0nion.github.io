@@ -1,0 +1,14 @@
+---
+import CollatzTreeExplorer from '../../components/collatz/CollatzTreeExplorer';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const locale = 'en' as const;
+---
+
+<BaseLayout
+  locale={locale}
+  title="Collatz Reverse Tree"
+  description="A simple interactive website for exploring the cycle-pruned reverse Collatz tree from 1."
+>
+  <CollatzTreeExplorer client:load locale={locale} />
+</BaseLayout>

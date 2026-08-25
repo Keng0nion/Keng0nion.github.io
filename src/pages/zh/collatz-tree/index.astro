@@ -1,0 +1,14 @@
+---
+import CollatzTreeExplorer from '../../../components/collatz/CollatzTreeExplorer';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+
+const locale = 'zh' as const;
+---
+
+<BaseLayout
+  locale={locale}
+  title="Collatz 逆向树"
+  description="一个用于从 1 出发探索循环裁剪 Collatz 逆向树的简单交互网站。"
+>
+  <CollatzTreeExplorer client:load locale={locale} />
+</BaseLayout>

@@ -275,6 +275,44 @@ img, svg, canvas { display: block; max-width: 100%; }
 .detail-section .eyebrow { max-width: none; font-size: .74rem; line-height: 1.4; }
 .detail-section p:last-child { margin-bottom: 0; }
 .detail-actions { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 2.5rem; }
+.command-section pre {
+  margin: 0;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  background: rgba(3, 5, 3, .78);
+  padding: 1rem;
+  color: var(--lime-soft);
+  font-family: var(--mono);
+  font-size: .78rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.command-note {
+  margin-top: 1rem;
+  color: var(--muted) !important;
+  font-size: .94rem !important;
+}
+.command-copy {
+  margin-top: .85rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--line-bright);
+  background: rgba(156,255,0,.035);
+  color: var(--text);
+  padding: 0 .95rem;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.command-copy:hover,
+.command-copy:focus-visible {
+  background: var(--lime);
+  color: #071000;
+  outline: none;
+}
 
 .about-grid { display: grid; gap: 2.5rem; align-items: start; padding-bottom: clamp(5rem, 9vw, 8rem); }
 .portrait-frame { position: relative; max-width: 27rem; border: 1px solid var(--line); background: var(--bg-elevated); padding: .8rem; }
