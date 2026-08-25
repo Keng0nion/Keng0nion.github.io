@@ -33,6 +33,10 @@ const copy = {
       'The Collatz rule sends an even number to n/2 and an odd number to 3n+1. This page runs the question backwards: for a number n, which numbers could have arrived at n in one step? The 1→4→2→1 loop is pruned so the result stays a readable tree, not a proof of the conjecture.',
     depth: 'Tree depth',
     labels: 'Labels',
+    zoom: 'Zoom',
+    zoomOut: 'Zoom out',
+    zoomIn: 'Zoom in',
+    resetZoom: 'Reset',
     raw: 'Raw numbers',
     mod: 'n = 6m + k',
     nodes: 'nodes',
@@ -55,6 +59,10 @@ const copy = {
       'Collatz 规则是：偶数变成 n/2，奇数变成 3n+1。这个页面反过来问：对一个数字 n，哪些数字经过一步会到达 n？为了让图保持成树，我去掉了 1→4→2→1 循环对应的反向边；这只是可视化探索，不是对猜想的证明。',
     depth: '树深度',
     labels: '标签',
+    zoom: '缩放',
+    zoomOut: '缩小',
+    zoomIn: '放大',
+    resetZoom: '重置',
     raw: '原始数字',
     mod: 'n = 6m + k',
     nodes: '节点',
@@ -143,12 +151,15 @@ function CollatzTreeExplorer({ locale }: Props) {
   const labels = copy[locale];
   const [depth, setDepth] = useState(10);
   const [labelMode, setLabelMode] = useState<'raw' | 'mod'>('raw');
+  const [zoom, setZoom] = useState(0.75);
   const tree = useMemo(() => buildTree(depth, labelMode), [depth, labelMode]);
   const [selectedValue, setSelectedValue] = useState(1);
   const trajectory = useMemo(() => forwardTrajectory(selectedValue), [selectedValue]);
   const trajectorySet = useMemo(() => new Set(trajectory), [trajectory]);
   const selectedNode = tree.nodes.find((node) => node.value === selectedValue) ?? tree.nodes[0];
   const svgHeight = 90 + depth * 112;
+  const renderedWidth = Math.round(1120 * zoom);
+  const renderedHeight = Math.round(svgHeight * zoom);
   const maxTrajectoryValue = Math.max(...trajectory);
 
   return (
@@ -193,6 +204,9 @@ function CollatzTreeExplorer({ locale }: Props) {
         .ct-field input[type='range'] { width: 100%; accent-color: var(--ct-cyan); }
         .ct-value { color: var(--ct-cyan); font-family: var(--mono); }
         .ct-buttons { display: flex; flex-wrap: wrap; gap: .55rem; }
+        .ct-zoom-controls { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem; min-width: min(100%, 24rem); }
+        .ct-zoom-controls input { flex: 1 1 10rem; accent-color: var(--ct-cyan); }
+        .ct-zoom-chip { color: var(--ct-cyan); font-family: var(--mono); font-size: .74rem; min-width: 3.5rem; text-align: right; }
         .ct-button { min-height: 2.6rem; border: 1px solid var(--ct-line); background: rgba(3, 5, 3, .65); color: var(--ct-muted); padding: 0 .85rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
         .ct-button:hover, .ct-button.is-active { color: var(--ct-text); border-color: var(--ct-cyan); background: rgba(69, 232, 255, .08); }
         .ct-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--ct-line); border: 1px solid var(--ct-line); margin-top: 1rem; }
@@ -202,8 +216,8 @@ function CollatzTreeExplorer({ locale }: Props) {
         .ct-layout { display: grid; gap: 1rem; }
         .ct-graph-panel, .ct-side-panel { border: 1px solid var(--ct-line); background: var(--ct-panel); min-width: 0; }
         .ct-graph-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; padding: 1rem; border-bottom: 1px solid var(--ct-line); color: var(--ct-muted); font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; }
-        .ct-graph-scroll { overflow: auto; max-height: min(72vh, 58rem); }
-        .ct-graph { min-width: 980px; display: block; background: radial-gradient(circle at center, rgba(69, 232, 255, .04), transparent 60%); }
+        .ct-graph-scroll { overflow: auto; max-height: min(72vh, 58rem); scroll-behavior: smooth; }
+        .ct-graph { display: block; background: radial-gradient(circle at center, rgba(69, 232, 255, .04), transparent 60%); }
         .ct-edge { stroke: rgba(69, 232, 255, .2); stroke-width: 1.4; }
         .ct-edge.is-path { stroke: var(--ct-lime); stroke-width: 2.6; filter: drop-shadow(0 0 5px rgba(156, 255, 0, .55)); }
         .ct-node circle { fill: #071013; stroke: rgba(69, 232, 255, .55); stroke-width: 1.5; transition: fill .15s ease, stroke .15s ease; }
@@ -261,11 +275,33 @@ function CollatzTreeExplorer({ locale }: Props) {
         <div className="ct-layout">
           <div className="ct-graph-panel">
             <div className="ct-graph-head">
-              <span>{tree.nodes.length} {labels.nodes}</span>
-              <span>{tree.edges.length} {labels.edges}</span>
+              <span>{tree.nodes.length} {labels.nodes} · {tree.edges.length} {labels.edges}</span>
+              <div className="ct-zoom-controls" aria-label={labels.zoom}>
+                <button type="button" className="ct-button" onClick={() => setZoom((value) => Math.max(0.35, Number((value - 0.1).toFixed(2))))}>{labels.zoomOut}</button>
+                <input
+                  aria-label={labels.zoom}
+                  type="range"
+                  min="0.35"
+                  max="1.4"
+                  step="0.05"
+                  value={zoom}
+                  onChange={(event) => setZoom(Number(event.currentTarget.value))}
+                />
+                <span className="ct-zoom-chip">{Math.round(zoom * 100)}%</span>
+                <button type="button" className="ct-button" onClick={() => setZoom((value) => Math.min(1.4, Number((value + 0.1).toFixed(2))))}>{labels.zoomIn}</button>
+                <button type="button" className="ct-button" onClick={() => setZoom(0.75)}>{labels.resetZoom}</button>
+              </div>
             </div>
             <div className="ct-graph-scroll">
-              <svg className="ct-graph" viewBox={`0 0 1120 ${svgHeight}`} style={{ height: `${svgHeight}px` }} role="img" aria-label="Cycle-pruned reverse Collatz tree">
+              <svg
+                className="ct-graph"
+                viewBox={`0 0 1120 ${svgHeight}`}
+                width={renderedWidth}
+                height={renderedHeight}
+                style={{ width: `${renderedWidth}px`, height: `${renderedHeight}px` }}
+                role="img"
+                aria-label="Cycle-pruned reverse Collatz tree"
+              >
                 {tree.edges.map((edge) => {
                   const from = tree.nodes.find((node) => node.value === edge.from);
                   const to = tree.nodes.find((node) => node.value === edge.to);
