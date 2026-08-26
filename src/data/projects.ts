@@ -1,6 +1,6 @@
 import type { Locale } from '../lib/site';
 
-export type ProjectStatus = 'completed' | 'in-development';
+export type ProjectStatus = 'completed' | 'in-development' | 'optimizing';
 
 type Localized = Record<Locale, string>;
 
@@ -137,7 +137,7 @@ export const projects: Project[] = [
       en: 'Run only on your own or explicitly authorized network. Requires Python 3 and Node.js 18+; Nmap, Masscan, Nikto, and TheHarvester remain optional extended collectors.',
       zh: '仅在自己拥有或明确获授权的网络中运行。需要 Python 3 和 Node.js 18+；Nmap、Masscan、Nikto 和 TheHarvester 仍是可选扩展采集器。',
     },
-    status: 'in-development',
+    status: 'optimizing',
     github: 'https://github.com/Keng0nion/netrunner-security-monitor',
     featured: false,
     accent: 'amber',
@@ -167,20 +167,51 @@ export const projects: Project[] = [
       en: 'Next, I will document data sources, scoring basis, and update dates, then add share/export behavior and browser smoke tests for the hosted page.',
       zh: '下一步将补充数据来源、评分依据和更新时间说明，并为线上页面加入分享/导出功能与浏览器烟雾测试。',
     },
-    status: 'in-development',
+    status: 'optimizing',
     github: 'https://github.com/Keng0nion/HANDHELD-MATRIX-V3.0',
     homepage: 'https://keng0nion.github.io/handheld-matrix/',
     featured: false,
     accent: 'violet',
     index: '05',
   },
+  {
+    slug: 'fifteen-day-frontline',
+    name: 'Fifteen-Day Frontline',
+    kicker: { en: 'WebGL survival shooter prototype', zh: 'WebGL 战场生存射击原型' },
+    short: {
+      en: 'A browser-based Three.js battlefield survival shooter prototype with a large 3D map, squad AI, resource scavenging, injuries, and a 15-day survival objective.',
+      zh: '一个基于 Three.js 的网页端 3D 战场生存射击原型，包含大地图、小队 AI、物资搜刮、伤病系统和 15 天生存目标。',
+    },
+    description: {
+      en: 'Fifteen-Day Frontline is a browser-based Three.js / WebGL battlefield survival shooter prototype. It combines a large 3D map with day-night cycles and weather, multi-faction squad AI that can investigate gunfire, flank, suppress, and contest airdrops, hunting and looting for supplies, and survival statuses such as hunger, bleeding, fractures, infection, suppression, and health. The win condition is to survive 15 days or complete 5 system missions, while death returns the player directly to the main menu.',
+      zh: '《十五日战线》是一个网页端 Three.js / WebGL 3D 战场生存射击原型。它结合大地图昼夜交替与天气、多阵营多小队战术 AI（枪声调查、包抄、压制、争夺空投）、狩猎与搜刮物资，以及饥饿、流血、骨折、感染、压制和血量等生存状态。目标是在战场中生存 15 天，或完成 5 个系统任务；死亡后会直接回到主界面。',
+    },
+    skills: {
+      en: 'Realtime interaction design, Three.js / WebGL scene assembly, game-state systems, tactical AI behavior, survival economy balancing, and static web game packaging.',
+      zh: '实时交互设计、Three.js / WebGL 场景搭建、游戏状态系统、战术 AI 行为、生存资源平衡，以及静态网页游戏发布。',
+    },
+    progress: {
+      en: 'The core static web build is available with movement, combat, tactical AI, looting and hunting, survival status rules, eight weapon slots, and medical / food / ammo interactions; it is now being optimized for balance, performance, feedback, and GitHub Pages polish.',
+      zh: '核心静态网页版本已经具备移动、战斗、战术 AI、搜刮与狩猎、生存状态规则、8 个武器栏，以及医疗 / 食物 / 弹药交互；当前进入平衡性、性能、反馈和 GitHub Pages 发布体验优化阶段。',
+    },
+    nextStep: {
+      en: 'Next, I will tune encounter pacing and resource balance, improve input and onboarding feedback, profile browser performance, and verify the hosted Pages route across desktop browsers.',
+      zh: '下一步将调整遭遇节奏与资源平衡，改善操作和新手引导反馈，分析浏览器性能，并在桌面浏览器中验证 GitHub Pages 访问路径。',
+    },
+    status: 'optimizing',
+    github: 'https://github.com/Keng0nion/fifteen-day-frontline',
+    homepage: 'https://keng0nion.github.io/fifteen-day-frontline/',
+    featured: false,
+    accent: 'amber',
+    index: '06',
+  },
 ];
 
 export const featuredProjects = projects.filter((project) => project.featured);
 
 export const statusLabels: Record<Locale, Record<ProjectStatus, string>> = {
-  en: { completed: 'Completed', 'in-development': 'In development' },
-  zh: { completed: '已完成', 'in-development': '开发中' },
+  en: { completed: 'Completed', 'in-development': 'In development', optimizing: 'Optimizing' },
+  zh: { completed: '完成', 'in-development': '开发中', optimizing: '优化中' },
 };
 
 export function getProject(slug: string): Project | undefined {

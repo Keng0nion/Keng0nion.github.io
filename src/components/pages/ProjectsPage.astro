@@ -52,7 +52,7 @@ const accentGlows: Record<Project['accent'], string> = {
         >
           <div class="project-card-top">
             <span class="project-number">{project.index}</span>
-            <span class:list={['status', { 'in-development': project.status === 'in-development' }]}> 
+            <span class:list={['status', project.status]}> 
               {statusLabels[locale][project.status]}
             </span>
           </div>
@@ -61,7 +61,7 @@ const accentGlows: Record<Project['accent'], string> = {
           </h2>
           <p class="mono">{project.kicker[locale]}</p>
           <p>{project.short[locale]}</p>
-          {project.status === 'in-development' && project.progress && (
+          {project.status !== 'completed' && project.progress && (
             <div class="project-card-progress">
               <span class="meta-label">{copy.currentProgress}</span>
               <p>{project.progress[locale]}</p>

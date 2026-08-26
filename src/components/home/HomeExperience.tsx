@@ -450,6 +450,7 @@ function projectStatusLabel(
   if (project.status === 'in-development') {
     return locale === 'zh' ? '开发中' : 'In development';
   }
+  if (project.status === 'optimizing') return locale === 'zh' ? '优化中' : 'Optimizing';
   return project.status ?? (locale === 'zh' ? '精选项目' : 'Featured project');
 }
 

@@ -52,7 +52,7 @@ const labels = copy[locale];
         <h1 class="display-title">{project.name}</h1>
       </div>
       <div>
-        <span class:list={['status', { 'in-development': project.status === 'in-development' }]}> 
+        <span class:list={['status', project.status]}> 
           {statusLabels[locale][project.status]}
         </span>
         <p class="lede">{project.short[locale]}</p>
@@ -64,7 +64,7 @@ const labels = copy[locale];
     <aside class="detail-meta" aria-label={locale === 'en' ? 'Project metadata' : '项目元数据'}>
       <div class="meta-cell" data-reveal-card data-reveal-order="0">
         <span class="meta-label">{labels.status}</span>
-        <span class:list={['status', { 'in-development': project.status === 'in-development' }]}> 
+        <span class:list={['status', project.status]}> 
           {statusLabels[locale][project.status]}
         </span>
       </div>

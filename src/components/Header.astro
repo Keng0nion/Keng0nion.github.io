@@ -56,7 +56,13 @@ const settingsCopy = locale === 'en'
         <span aria-hidden="true">//</span>{otherLabel}
       </a>
       <details class="site-settings" data-site-settings>
-        <summary aria-label={settingsCopy.title}>{settingsCopy.title}</summary>
+        <summary aria-label={settingsCopy.title} title={settingsCopy.title}>
+          <svg class="settings-gear" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3.2v2.1M12 18.7v2.1M4.2 12h2.1M17.7 12h2.1M6.5 6.5 8 8M16 16l1.5 1.5M6.5 17.5 8 16M16 8l1.5-1.5" />
+            <path d="M12 6.2a5.8 5.8 0 0 1 2 .35l1.05-1.45 2.1 1.2-.62 1.66a6 6 0 0 1 1.08 1.86l1.75.2v2.42l-1.75.2a6 6 0 0 1-1.08 1.86l.62 1.66-2.1 1.2L14 15.9a5.8 5.8 0 0 1-4 0l-1.05 1.45-2.1-1.2.62-1.66a6 6 0 0 1-1.08-1.86l-1.75-.2v-2.42l1.75-.2a6 6 0 0 1 1.08-1.86L6.85 6.3l2.1-1.2L10 6.55a5.8 5.8 0 0 1 2-.35Z" />
+            <circle cx="12" cy="12" r="2.55" />
+          </svg>
+        </summary>
         <div class="settings-panel">
           <label>
             <span>{settingsCopy.quality}</span>
