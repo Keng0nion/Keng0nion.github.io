@@ -1,5 +1,7 @@
 # Keng0nion's Farm
 
+![Home page screenshot: WebGL Earth with the site title](./docs/screenshot-home.png)
+
 The bilingual personal project archive of **Kengo Kubota (Keng0nion)**, built for documenting independent projects, experiments, and a continuing development journey.
 
 **Website:** [https://keng0nion.github.io/](https://keng0nion.github.io/)
