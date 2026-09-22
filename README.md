@@ -1,21 +1,35 @@
+**目录：**
+
+- [中文版](README.md)
+- [英文版](README.en.md)
+- [日文版](README.ja.md)
+
 # Keng0nion's Farm
 
-![Home page screenshot: WebGL Earth with the site title](./docs/screenshot-home.png)
+![首页截图：带有网站标题的 WebGL 地球](./docs/screenshot-home.png)
 
-The bilingual personal project archive of **Kengo Kubota (Keng0nion)**, built for documenting independent projects, experiments, and a continuing development journey.
+**Kengo Kubota（Keng0nion）** 的双语个人项目档案，用于记录独立项目、实验，以及持续的开发旅程。
 
-**Website:** [https://keng0nion.github.io/](https://keng0nion.github.io/)
+**网站：** [https://keng0nion.github.io/](https://keng0nion.github.io/)
 
-## Features
+## 目录
 
-- English and Chinese routes with remembered language preference
-- Interactive cyberpunk home experience with Matrix rain and click particles
-- A WebGL Earth with day, night, normal, and cloud textures
-- Project archive with five bilingual project dossiers
-- About, development journey, contact, and attribution pages
-- Static GitHub Pages deployment through GitHub Actions
+- [功能特性](#功能特性)
+- [技术栈](#技术栈)
+- [本地开发](#本地开发)
+- [验证](#验证)
+- [素材署名](#素材署名)
 
-## Technology
+## 功能特性
+
+- 英文和中文路由，支持记忆语言偏好
+- 带有 Matrix 雨和点击粒子效果的交互式赛博朋克首页体验
+- 带有白天、夜晚、法线和云层纹理的 WebGL 地球
+- 收录五份双语项目档案的项目档案库
+- 关于、开发旅程、联系方式和素材署名页面
+- 通过 GitHub Actions 进行静态 GitHub Pages 部署
+
+## 技术栈
 
 - Astro 7
 - React 19
@@ -23,14 +37,14 @@ The bilingual personal project archive of **Kengo Kubota (Keng0nion)**, built fo
 - Three.js
 - `react-globe.gl`
 
-## Local development
+## 本地开发
 
 ```sh
 npm install
 npx astro dev --background
 ```
 
-Manage the background server with:
+使用以下命令管理后台服务器：
 
 ```sh
 npx astro dev status
@@ -38,13 +52,13 @@ npx astro dev logs
 npx astro dev stop
 ```
 
-## Validation
+## 验证
 
 ```sh
 npx astro check
 npm run build
 ```
 
-## Attribution
+## 素材署名
 
-Earth and space textures are provided by Solar System Scope / INOVE under CC BY 4.0. Open-source rendering libraries are used under their respective MIT licenses. See [`ATTRIBUTION.md`](./ATTRIBUTION.md) and the website Credits page for details.
+地球和太空纹理由 Solar System Scope / INOVE 提供，遵循 CC BY 4.0 许可。开源渲染库在各自的 MIT 许可下使用。详情请参见 [`ATTRIBUTION.md`](./ATTRIBUTION.md) 和网站的 Credits 页面。
