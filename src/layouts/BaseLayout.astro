@@ -49,6 +49,8 @@ const zhPath = alternatePath(pathname, 'zh');
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:site_name" content={SITE.title} />
+    <meta property="og:locale" content={locale === 'zh' ? 'zh_CN' : 'en'} />
+    <meta property="og:image" content={new URL('/kengo-avatar.jpg', Astro.site)} />
     <meta name="twitter:card" content="summary" />
     <link rel="canonical" href={canonical} />
     <link rel="alternate" hreflang="en" href={new URL(enPath, Astro.site)} />
@@ -57,6 +59,16 @@ const zhPath = alternatePath(pathname, 'zh');
     <link rel="sitemap" href="/sitemap-index.xml" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{pageTitle}</title>
+    {home && (
+      <script type="application/ld+json" set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: SITE.title,
+        url: new URL('/', Astro.site).href,
+        description: SITE.description.en,
+        inLanguage: ['en', 'zh-CN'],
+      })} />
+    )}
     <script is:inline define:vars={{ home }}>
       try {
         if (home && sessionStorage.getItem('keng0nion.home.boot.v1') === '1') {

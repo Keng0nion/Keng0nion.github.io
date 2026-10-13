@@ -1,6 +1,6 @@
 ---
 import type { Locale } from '../lib/site';
-import { pathFor, SITE } from '../lib/site';
+import { pathFor, publishedSites, SITE } from '../lib/site';
 
 interface Props { locale: Locale }
 const { locale } = Astro.props;
@@ -14,4 +14,9 @@ const year = new Date().getFullYear();
       <a href={pathFor(locale, 'credits')}>{locale === 'en' ? 'Credits' : '致谢'}</a>
     </span>
   </div>
+  <nav class="container footer-sites" aria-label={locale === 'en' ? 'Published sites' : '发布站点'}>
+    <span>{locale === 'en' ? 'Published sites' : '发布站点'}</span>
+    {publishedSites.map((site) => <a href={site.url}>{site.label}</a>)}
+  </nav>
 </footer>
+
