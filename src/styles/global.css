@@ -324,6 +324,9 @@ img, svg, canvas { display: block; max-width: 100%; }
 .footer-links { display: flex; gap: 1.2rem; }
 .footer-links a { display: inline-flex; min-width: 2.75rem; min-height: 2.75rem; align-items: center; justify-content: center; }
 .footer-links a:hover { color: var(--lime); }
+.footer-sites { display: flex; flex-wrap: wrap; align-items: baseline; gap: .55rem 1.2rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--line); font-family: var(--mono); font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; }
+.footer-sites > span { opacity: .65; }
+.footer-sites a:hover { color: var(--lime); }
 
 @media (min-width: 768px) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .reveal-cards-enabled [data-reveal-card] {
