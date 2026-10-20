@@ -116,16 +116,7 @@ img, svg, canvas { display: block; max-width: 100%; }
   font-weight: 700;
   letter-spacing: -.03em;
 }
-.brand-mark {
-  display: grid;
-  width: 2rem;
-  aspect-ratio: 1;
-  place-items: center;
-  border: 1px solid var(--line-bright);
-  color: var(--lime);
-  font-family: var(--mono);
-  box-shadow: inset 0 0 16px rgba(156,255,0,.08), 0 0 16px rgba(156,255,0,.08);
-}
+.brand-mark { display: block; width: 2rem; height: 2rem; }
 .brand-label { display: none; }
 .nav-shell { display: flex; align-items: center; gap: clamp(.6rem, 2vw, 1.8rem); }
 .site-nav { display: none; align-items: center; gap: clamp(.8rem, 2vw, 2rem); }
@@ -413,7 +404,7 @@ img, svg, canvas { display: block; max-width: 100%; }
 .portrait-frame::before, .portrait-frame::after { content: ''; position: absolute; width: 3rem; height: 3rem; pointer-events: none; }
 .portrait-frame::before { left: -.5rem; top: -.5rem; border-left: 1px solid var(--lime); border-top: 1px solid var(--lime); }
 .portrait-frame::after { right: -.5rem; bottom: -.5rem; border-right: 1px solid var(--lime); border-bottom: 1px solid var(--lime); }
-.portrait-frame img { width: 100%; aspect-ratio: 1; object-fit: cover; filter: saturate(.55) contrast(1.12); }
+.portrait-frame img { width: 100%; aspect-ratio: 1; object-fit: cover; }
 .about-copy h2 { margin: 0 0 .4rem; font-family: var(--display); font-size: clamp(2.2rem, 5vw, 4.5rem); letter-spacing: -.055em; }
 .handle { color: var(--lime); font-family: var(--mono); }
 .role { margin: 1.4rem 0 2rem; color: var(--muted); font-family: var(--mono); font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; }
