@@ -404,7 +404,7 @@ img, svg, canvas { display: block; max-width: 100%; }
 .portrait-frame::before, .portrait-frame::after { content: ''; position: absolute; width: 3rem; height: 3rem; pointer-events: none; }
 .portrait-frame::before { left: -.5rem; top: -.5rem; border-left: 1px solid var(--lime); border-top: 1px solid var(--lime); }
 .portrait-frame::after { right: -.5rem; bottom: -.5rem; border-right: 1px solid var(--lime); border-bottom: 1px solid var(--lime); }
-.portrait-frame img { width: 100%; aspect-ratio: 1; object-fit: cover; }
+.portrait-frame img { width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; }
 .about-copy h2 { margin: 0 0 .4rem; font-family: var(--display); font-size: clamp(2.2rem, 5vw, 4.5rem); letter-spacing: -.055em; }
 .handle { color: var(--lime); font-family: var(--mono); }
 .role { margin: 1.4rem 0 2rem; color: var(--muted); font-family: var(--mono); font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; }
