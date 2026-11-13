@@ -196,6 +196,20 @@ interface EarthTextureSet {
   specular: string;
 }
 
+interface GlobeTextureMaterial {
+  map?: unknown;
+  bumpMap?: unknown;
+  emissiveMap?: unknown;
+  specularMap?: unknown;
+  dispose(): void;
+}
+
+interface CloudTextureMaterial {
+  map?: unknown;
+  alphaMap?: unknown;
+  dispose(): void;
+}
+
 type StaticGlobeStyle = CSSProperties & {
   '--earth-day-texture': string;
   '--earth-night-texture': string;
@@ -332,11 +346,24 @@ function textureResolutionForQuality(
   return '1k';
 }
 
+function cappedResolution(
+  resolution: EarthTextureResolution,
+  ceiling: EarthTextureResolution,
+): EarthTextureResolution {
+  return earthTextureResolutionOrder.indexOf(resolution) <= earthTextureResolutionOrder.indexOf(ceiling)
+    ? resolution
+    : ceiling;
+}
+
 function earthTextureSetForQuality(
   quality: VisualQuality,
   maxTextureSize = Number.POSITIVE_INFINITY,
+  ceiling: EarthTextureResolution = '8k',
 ): EarthTextureSet {
-  const resolution = textureResolutionForQuality(quality, maxTextureSize);
+  const resolution = cappedResolution(
+    textureResolutionForQuality(quality, maxTextureSize),
+    ceiling,
+  );
   const detailResolution = resolution === '8k' ? '4k' : resolution;
 
   return {
@@ -347,6 +374,39 @@ function earthTextureSetForQuality(
     bump: `/textures/earth-hd-bump-${detailResolution}.webp`,
     specular: `/textures/earth-hd-specular-${detailResolution}.webp`,
   };
+}
+
+interface LoadedEarthTextures {
+  day: { anisotropy: number; needsUpdate: boolean; dispose(): void };
+  night: { anisotropy: number; needsUpdate: boolean; dispose(): void };
+  clouds: { anisotropy: number; needsUpdate: boolean; dispose(): void };
+  bump: { anisotropy: number; needsUpdate: boolean; dispose(): void };
+  specular: { anisotropy: number; needsUpdate: boolean; dispose(): void };
+}
+
+async function loadTextureSet(
+  set: EarthTextureSet,
+  THREE: typeof import('three'),
+  anisotropy: number,
+): Promise<LoadedEarthTextures> {
+  const loader = new THREE.TextureLoader();
+  const [day, night, clouds, bump, specular] = await Promise.all([
+    loader.loadAsync(set.day),
+    loader.loadAsync(set.night),
+    loader.loadAsync(set.clouds),
+    loader.loadAsync(set.bump),
+    loader.loadAsync(set.specular),
+  ]);
+
+  for (const texture of [day, night, clouds]) texture.colorSpace = THREE.SRGBColorSpace;
+  // Anisotropy is fixed before the first GPU upload: changing it afterwards would
+  // trigger a full texture re-upload on the main thread and stall the frame.
+  for (const texture of [day, night, clouds, bump, specular]) {
+    texture.anisotropy = anisotropy;
+    texture.needsUpdate = false;
+  }
+
+  return { day, night, clouds, bump, specular };
 }
 
 function localize(value: LocalizedHomeText, locale: HomeLocale): string {
@@ -417,22 +477,69 @@ function useElementSize<T extends HTMLElement>() {
   return { ref, size };
 }
 
-function getWebGLMaxTextureSize(): number {
+interface WebGlPreflight {
+  maxTextureSize: number;
+  maxAnisotropy: number;
+  softwareMode: boolean;
+}
+
+function preflightWebGl(): WebGlPreflight {
+  const unavailable: WebGlPreflight = { maxTextureSize: 0, maxAnisotropy: 1, softwareMode: false };
   try {
     const canvas = document.createElement('canvas');
     const gl =
       canvas.getContext('webgl2', { failIfMajorPerformanceCaveat: true }) ||
       canvas.getContext('webgl', { failIfMajorPerformanceCaveat: true });
 
-    if (!gl) return 0;
+    if (!gl) return unavailable;
 
     const maxTextureSize = Number(gl.getParameter(gl.MAX_TEXTURE_SIZE));
+    const anisotropyExtension = gl.getExtension('EXT_texture_filter_anisotropic');
+    const maxAnisotropy = anisotropyExtension
+      ? Number(gl.getParameter(anisotropyExtension.MAX_TEXTURE_MAX_ANISOTROPY_EXT))
+      : 1;
+
+    let softwareMode = false;
+    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+    const rendererName = debugInfo
+      ? String(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL))
+      : '';
+    if (/swiftshader|software|llvmpipe|basic render/i.test(rendererName)) softwareMode = true;
+
     gl.getExtension('WEBGL_lose_context')?.loseContext();
 
-    return Number.isFinite(maxTextureSize) ? maxTextureSize : 0;
+    return {
+      maxTextureSize: Number.isFinite(maxTextureSize) ? maxTextureSize : 0,
+      maxAnisotropy: Number.isFinite(maxAnisotropy) && maxAnisotropy >= 1 ? maxAnisotropy : 1,
+      softwareMode,
+    };
   } catch {
-    return 0;
+    return unavailable;
   }
+}
+
+function connectionSavesData(): boolean {
+  try {
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    return connection?.saveData === true;
+  } catch {
+    return false;
+  }
+}
+
+function idleCallback(callback: () => void): () => void {
+  const idleWindow = window as Window & {
+    requestIdleCallback?: (handler: () => void, options?: { timeout: number }) => number;
+    cancelIdleCallback?: (handle: number) => void;
+  };
+
+  if (typeof idleWindow.requestIdleCallback === 'function') {
+    const handle = idleWindow.requestIdleCallback(callback, { timeout: 4000 });
+    return () => idleWindow.cancelIdleCallback?.(handle);
+  }
+
+  const timer = window.setTimeout(callback, 1500);
+  return () => window.clearTimeout(timer);
 }
 
 function projectHref(project: HomeFeaturedProject, baseHref: string): string {
@@ -990,7 +1097,9 @@ function StaticEarthFallback({
   quality: VisualQuality;
 }) {
   const defaults = copyDefaults[locale];
-  const textureSet = earthTextureSetForQuality(quality);
+  // The static globe is a transient stand-in while WebGL initializes; cap its CSS
+  // textures at 2K so a failed or slow WebGL start never pulls 4K/8K images.
+  const textureSet = earthTextureSetForQuality(quality, Number.POSITIVE_INFINITY, '2k');
   const style: StaticGlobeStyle = {
     '--earth-day-texture': `url('${textureSet.day}')`,
     '--earth-night-texture': `url('${textureSet.night}')`,
@@ -1033,11 +1142,12 @@ function EarthGlobe({
   const cloudResource = useRef<{
     mesh: { onBeforeRender?: () => void };
     geometry: { dispose(): void };
-    material: { dispose(): void };
+    material: CloudTextureMaterial;
   } | null>(null);
   const runtimeRef = useRef<Awaited<typeof import('three')> | null>(null);
   const textureRef = useRef<Array<{ anisotropy: number; needsUpdate: boolean; dispose(): void }>>([]);
-  const materialRef = useRef<{ dispose(): void } | null>(null);
+  const materialRef = useRef<GlobeTextureMaterial | null>(null);
+  const pendingUpgradeRef = useRef<{ targetSet: EarthTextureSet; anisotropy: number } | null>(null);
   const activeRef = useRef(active);
   const mobileRef = useRef(mobile);
   const reducedRef = useRef(reducedMotion);
@@ -1064,10 +1174,10 @@ function EarthGlobe({
       autoRotateSpeed: number;
       loadWebGlOnMobile: boolean;
     }> = {
-      low: { arcCount: 4, globeResolution: 8, pointResolution: 4, ringResolution: 24, cloudSegments: 32, anisotropy: 2, pixelRatio: 1.15, autoRotateSpeed: 0.12, loadWebGlOnMobile: false },
-      balanced: { arcCount: 11, globeResolution: 5, pointResolution: 8, ringResolution: 64, cloudSegments: 80, anisotropy: 8, pixelRatio: 1.5, autoRotateSpeed: 0.24, loadWebGlOnMobile: false },
-      high: { arcCount: 14, globeResolution: 3.5, pointResolution: 12, ringResolution: 96, cloudSegments: 112, anisotropy: 12, pixelRatio: 1.75, autoRotateSpeed: 0.36, loadWebGlOnMobile: false },
-      ultra: { arcCount: 16, globeResolution: 2.5, pointResolution: 16, ringResolution: 128, cloudSegments: 160, anisotropy: 16, pixelRatio: 2, autoRotateSpeed: 0.52, loadWebGlOnMobile: true },
+      low: { arcCount: 4, globeResolution: 8, pointResolution: 4, ringResolution: 24, cloudSegments: 32, anisotropy: 1, pixelRatio: 1.15, autoRotateSpeed: 0.12, loadWebGlOnMobile: false },
+      balanced: { arcCount: 11, globeResolution: 5, pointResolution: 8, ringResolution: 64, cloudSegments: 80, anisotropy: 4, pixelRatio: 1.5, autoRotateSpeed: 0.24, loadWebGlOnMobile: false },
+      high: { arcCount: 14, globeResolution: 3.5, pointResolution: 12, ringResolution: 96, cloudSegments: 112, anisotropy: 8, pixelRatio: 1.75, autoRotateSpeed: 0.36, loadWebGlOnMobile: false },
+      ultra: { arcCount: 16, globeResolution: 2.5, pointResolution: 16, ringResolution: 128, cloudSegments: 160, anisotropy: 8, pixelRatio: 2, autoRotateSpeed: 0.52, loadWebGlOnMobile: true },
     };
     return profiles[quality];
   }, [quality]);
@@ -1134,7 +1244,10 @@ function EarthGlobe({
   }, [hostRef]);
 
   useEffect(() => {
-    if (loadRequested || !active || !inView || !useWebGlOnDevice) return;
+    // Loading deliberately does NOT wait for the boot overlay to finish: the globe
+    // initializes behind it, so the first-visit boot animation covers the one-time
+    // setup cost instead of exposing it right when the hero becomes visible.
+    if (loadRequested || !inView || !useWebGlOnDevice) return;
 
     const timer = window.setTimeout(() => {
       if (!qualityProfile.loadWebGlOnMobile && window.matchMedia('(max-width: 767px), (pointer: coarse)').matches) return;
@@ -1143,65 +1256,64 @@ function EarthGlobe({
     }, 250);
 
     return () => window.clearTimeout(timer);
-  }, [active, inView, loadRequested, qualityProfile.loadWebGlOnMobile, useWebGlOnDevice]);
+  }, [inView, loadRequested, qualityProfile.loadWebGlOnMobile, useWebGlOnDevice]);
 
   useEffect(() => {
     if (!loadRequested) return;
 
-    const maxTextureSize = getWebGLMaxTextureSize();
-    if (!maxTextureSize) {
+    const preflight = preflightWebGl();
+    if (!preflight.maxTextureSize || preflight.softwareMode || connectionSavesData()) {
       setStatus('unavailable');
       return;
     }
 
-    const textureSet = earthTextureSetForQuality(quality, maxTextureSize);
+    const targetSet = earthTextureSetForQuality(quality, preflight.maxTextureSize);
+    const anisotropy = Math.min(preflight.maxAnisotropy, qualityProfile.anisotropy);
+    // Two-phase loading: the globe first appears with the tiny 1K set (about 150 KB in
+    // total) and the selected tier streams in later from idle time. This keeps the first
+    // paint cheap at every quality level instead of stalling on 4K/8K texture uploads.
+    const initialSet = targetSet.resolution === '1k'
+      ? targetSet
+      : earthTextureSetForQuality('low');
     let cancelled = false;
     setStatus('loading');
     setMaterial(null);
+    pendingUpgradeRef.current = null;
 
     void Promise.all([import('react-globe.gl'), import('three')])
       .then(async ([globeModule, THREE]) => {
-        const loader = new THREE.TextureLoader();
-        const [dayTexture, nightTexture, cloudTexture, bumpTexture, specularTexture] =
-          await Promise.all([
-            loader.loadAsync(textureSet.day),
-            loader.loadAsync(textureSet.night),
-            loader.loadAsync(textureSet.clouds),
-            loader.loadAsync(textureSet.bump),
-            loader.loadAsync(textureSet.specular),
-          ]);
-
-        dayTexture.colorSpace = THREE.SRGBColorSpace;
-        nightTexture.colorSpace = THREE.SRGBColorSpace;
-        cloudTexture.colorSpace = THREE.SRGBColorSpace;
-
-        const globeMaterial = new THREE.MeshPhongMaterial({
-          map: dayTexture,
-          bumpMap: bumpTexture,
-          bumpScale: textureSet.resolution === '8k' ? 0.045 : 0.035,
-          emissiveMap: nightTexture,
-          emissive: new THREE.Color('#8dff70'),
-          emissiveIntensity: 0.36,
-          specularMap: specularTexture,
-          shininess: textureSet.resolution === '8k' ? 28 : 22,
-          specular: new THREE.Color('#8aa092'),
-        });
+        const textures = await loadTextureSet(initialSet, THREE, anisotropy);
 
         if (cancelled) {
-          globeMaterial.dispose();
-          dayTexture.dispose();
-          nightTexture.dispose();
-          cloudTexture.dispose();
-          bumpTexture.dispose();
-          specularTexture.dispose();
+          textures.day.dispose();
+          textures.night.dispose();
+          textures.clouds.dispose();
+          textures.bump.dispose();
+          textures.specular.dispose();
           return;
         }
 
+        const globeMaterial = new THREE.MeshPhongMaterial({
+          map: textures.day,
+          bumpMap: textures.bump,
+          bumpScale: targetSet.resolution === '8k' ? 0.045 : 0.035,
+          emissiveMap: textures.night,
+          emissive: new THREE.Color('#8dff70'),
+          emissiveIntensity: 0.36,
+          specularMap: textures.specular,
+          shininess: targetSet.resolution === '8k' ? 28 : 22,
+          specular: new THREE.Color('#8aa092'),
+        });
+
         runtimeRef.current = THREE;
-        textureRef.current = [dayTexture, nightTexture, cloudTexture, bumpTexture, specularTexture];
+        textureRef.current = [textures.day, textures.night, textures.clouds, textures.bump, textures.specular];
         materialRef.current = globeMaterial;
         setMaterial(globeMaterial);
         setGlobeComponent(() => globeModule.default as DynamicGlobe);
+
+        if (targetSet.resolution !== initialSet.resolution) {
+          pendingUpgradeRef.current = { targetSet, anisotropy };
+        }
       })
       .catch(() => {
         if (!cancelled) setStatus('unavailable');
@@ -1209,6 +1321,7 @@ function EarthGlobe({
 
     return () => {
       cancelled = true;
+      pendingUpgradeRef.current = null;
       contextLostCleanup.current?.();
       contextLostCleanup.current = null;
       if (cloudResource.current && globeRef.current) {
@@ -1222,7 +1335,106 @@ function EarthGlobe({
       textureRef.current.forEach((texture) => texture.dispose());
       textureRef.current = [];
     };
-  }, [loadRequested, quality]);
+  }, [loadRequested, quality, qualityProfile.anisotropy]);
+
+  // Streams the full-resolution textures in after the globe is already visible: the
+  // upgrade waits for idle time, then swaps one map per animation frame so the uploads
+  // never concentrate into a single long main-thread task.
+  useEffect(() => {
+    if (status !== 'ready') return;
+    const plan = pendingUpgradeRef.current;
+    if (!plan) return;
+    pendingUpgradeRef.current = null;
+
+    let cancelled = false;
+    let detachVisibility: (() => void) | null = null;
+
+    const run = async () => {
+      const THREE = runtimeRef.current;
+      const material = materialRef.current;
+      if (!THREE || !material || cancelled) return;
+
+      if (document.hidden) {
+        await new Promise<void>((resolve) => {
+          const onVisible = () => {
+            detachVisibility?.();
+            detachVisibility = null;
+            resolve();
+          };
+          detachVisibility = () => document.removeEventListener('visibilitychange', onVisible);
+          document.addEventListener('visibilitychange', onVisible);
+        });
+        if (cancelled) return;
+      }
+
+      const textures = await loadTextureSet(plan.targetSet, THREE, plan.anisotropy);
+      const allTextures = [textures.day, textures.night, textures.clouds, textures.bump, textures.specular];
+      if (cancelled) {
+        allTextures.forEach((texture) => texture.dispose());
+        return;
+      }
+
+      const queueDispose = (texturesToDispose: Array<{ dispose(): void }>) => {
+        window.requestAnimationFrame(() => texturesToDispose.forEach((texture) => texture.dispose()));
+      };
+      const nextFrame = () => new Promise<void>((resolve) => {
+        window.requestAnimationFrame(() => resolve());
+      });
+
+      const steps: Array<() => void> = [
+        () => {
+          const previous = material.map;
+          material.map = textures.day;
+          textureRef.current[0] = textures.day;
+          queueDispose([previous as { dispose(): void }]);
+        },
+        () => {
+          const previous = material.emissiveMap;
+          material.emissiveMap = textures.night;
+          textureRef.current[1] = textures.night;
+          queueDispose([previous as { dispose(): void }]);
+        },
+        () => {
+          const previous = material.specularMap;
+          material.specularMap = textures.specular;
+          textureRef.current[4] = textures.specular;
+          queueDispose([previous as { dispose(): void }]);
+        },
+        () => {
+          const previous = material.bumpMap;
+          material.bumpMap = textures.bump;
+          textureRef.current[3] = textures.bump;
+          queueDispose([previous as { dispose(): void }]);
+        },
+        () => {
+          const cloud = cloudResource.current;
+          if (!cloud) {
+            queueDispose([textures.clouds]);
+            return;
+          }
+          const previous = cloud.material.map;
+          cloud.material.map = textures.clouds;
+          cloud.material.alphaMap = textures.clouds;
+          textureRef.current[2] = textures.clouds;
+          queueDispose([previous as { dispose(): void }]);
+        },
+      ];
+
+      for (const step of steps) {
+        if (cancelled) return;
+        step();
+        await nextFrame();
+      }
+    };
+
+    const cancelIdle = idleCallback(() => { void run(); });
+
+    return () => {
+      cancelled = true;
+      cancelIdle();
+      detachVisibility?.();
+    };
+  }, [status, quality]);
 
   const configureGlobe = useCallback(() => {
     const globe = globeRef.current;
@@ -1245,19 +1457,19 @@ function EarthGlobe({
     const globe = globeRef.current;
     if (!globe) return;
     configureGlobe();
-    if (active && useWebGlOnDevice && !document.hidden) globe.resumeAnimation();
+    // Render as soon as the globe is ready, even while the boot overlay is still up:
+    // the first frames carry the one-time shader compile, texture uploads and scene
+    // build, and running them under the overlay keeps the hero entrance smooth.
+    // Auto-rotation itself still waits for `active` (see configureGlobe).
+    if (useWebGlOnDevice && !document.hidden) globe.resumeAnimation();
     else globe.pauseAnimation();
-  }, [active, configureGlobe, useWebGlOnDevice]);
+  }, [configureGlobe, useWebGlOnDevice]);
 
   useEffect(() => {
     const onVisibility = () => {
       const globe = globeRef.current;
       if (!globe) return;
-      if (
-        document.hidden ||
-        !activeRef.current ||
-        reducedRef.current
-      ) globe.pauseAnimation();
+      if (document.hidden || reducedRef.current) globe.pauseAnimation();
       else globe.resumeAnimation();
       const controls = globe.controls();
       controls.autoRotate =
@@ -1278,11 +1490,8 @@ function EarthGlobe({
     configureGlobe();
     const renderer = globe.renderer();
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, qualityProfile.pixelRatio));
-    const maxAnisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), qualityProfile.anisotropy);
-    textureRef.current.forEach((texture) => {
-      texture.anisotropy = maxAnisotropy;
-      texture.needsUpdate = true;
-    });
+    // Texture anisotropy is fixed before the first upload (see loadTextureSet), so this
+    // handler never forces a re-upload of already-bound textures.
 
     const ambient = new THREE.AmbientLight('#5b765f', 1.35);
     const sunlight = new THREE.DirectionalLight('#ffffff', 2.25);
@@ -1333,10 +1542,10 @@ function EarthGlobe({
     contextLostCleanup.current = () =>
       renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
 
-    if (active && useWebGlOnDevice && !document.hidden) globe.resumeAnimation();
+    if (useWebGlOnDevice && !document.hidden) globe.resumeAnimation();
     else globe.pauseAnimation();
     setStatus('ready');
-  }, [active, configureGlobe, qualityProfile.anisotropy, qualityProfile.cloudSegments, qualityProfile.pixelRatio, reducedMotion, useWebGlOnDevice]);
+  }, [configureGlobe, qualityProfile.cloudSegments, qualityProfile.pixelRatio, useWebGlOnDevice]);
 
   const failed = status === 'unavailable';
   const showWebGL = status === 'ready' && useWebGlOnDevice;
