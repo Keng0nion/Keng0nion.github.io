@@ -91,8 +91,9 @@ const zhPath = alternatePath(pathname, 'zh');
 
         const settingsKey = 'keng0nion-site-settings-v1';
         const settingsRaw = JSON.parse(localStorage.getItem(settingsKey) || '{}');
-        const allowedQualities = ['low', 'balanced', 'high', 'ultra'];
-        const quality = allowedQualities.includes(settingsRaw.quality) ? settingsRaw.quality : 'balanced';
+        // Two quality tiers remain (2K default, 4K); legacy 'low'/'ultra' migrate onto them.
+        const legacyQuality = settingsRaw.quality === 'ultra' ? 'high' : settingsRaw.quality === 'low' ? 'balanced' : settingsRaw.quality;
+        const quality = legacyQuality === 'high' ? 'high' : 'balanced';
         const feedbackColor = /^#[0-9a-f]{6}$/i.test(String(settingsRaw.feedbackColor || '')) ? settingsRaw.feedbackColor : '#9cff00';
         document.documentElement.dataset.visualQuality = quality;
         document.documentElement.dataset.feedback = settingsRaw.feedbackEnabled ? 'on' : 'off';

@@ -24,20 +24,16 @@ const settingsCopy = locale === 'en'
   ? {
       title: 'Settings',
       quality: 'Start-page Earth quality',
-      qualityLow: 'Low · 1K',
       qualityBalanced: 'Balanced · 2K',
       qualityHigh: 'High · 4K',
-      qualityUltra: 'Ultra · 8K',
       feedback: 'Project-page click feedback',
       color: 'Feedback color',
     }
   : {
       title: '设置',
       quality: '首页地球画质',
-      qualityLow: '低 · 1K',
       qualityBalanced: '均衡 · 2K',
       qualityHigh: '高 · 4K',
-      qualityUltra: '极高 · 8K',
       feedback: '项目页点击反馈',
       color: '反馈颜色',
     }; 
@@ -67,10 +63,8 @@ const settingsCopy = locale === 'en'
           <label>
             <span>{settingsCopy.quality}</span>
             <select data-setting-quality>
-              <option value="low">{settingsCopy.qualityLow}</option>
               <option value="balanced">{settingsCopy.qualityBalanced}</option>
               <option value="high">{settingsCopy.qualityHigh}</option>
-              <option value="ultra">{settingsCopy.qualityUltra}</option>
             </select>
           </label>
           <label class="settings-row">
@@ -113,7 +107,7 @@ const settingsCopy = locale === 'en'
   });
 
   (() => {
-    type VisualQuality = 'low' | 'balanced' | 'high' | 'ultra';
+    type VisualQuality = 'balanced' | 'high';
     interface SiteSettings {
       quality: VisualQuality;
       feedbackEnabled: boolean;
@@ -126,13 +120,20 @@ const settingsCopy = locale === 'en'
       feedbackEnabled: false,
       feedbackColor: '#9cff00',
     };
-    const qualityOptions: ReadonlyArray<VisualQuality> = ['low', 'balanced', 'high', 'ultra'];
+    const qualityOptions: ReadonlyArray<VisualQuality> = ['balanced', 'high'];
     const allowedQualities = new Set<VisualQuality>(qualityOptions);
+    // Older builds stored 'low' (1K) and 'ultra' (8K); migrate them onto the
+    // remaining tiers instead of silently resetting to the default.
+    const migrateQuality = (value: unknown): VisualQuality | undefined => {
+      if (value === 'ultra') return 'high';
+      if (value === 'low') return 'balanced';
+      return allowedQualities.has(value as VisualQuality) ? value as VisualQuality : undefined;
+    };
     const normalizeColor = (value: unknown) => /^#[0-9a-f]{6}$/i.test(String(value ?? '')) ? String(value) : defaults.feedbackColor;
     const normalize = (value: unknown): SiteSettings => {
       const input = value && typeof value === 'object' ? value as Record<string, unknown> : {};
       return {
-        quality: allowedQualities.has(input.quality as VisualQuality) ? input.quality as VisualQuality : defaults.quality,
+        quality: migrateQuality(input.quality) ?? defaults.quality,
         feedbackEnabled: Boolean(input.feedbackEnabled),
         feedbackColor: normalizeColor(input.feedbackColor),
       };

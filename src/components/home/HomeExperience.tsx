@@ -184,8 +184,8 @@ type DynamicGlobe = ComponentType<
 
 type BootPhase = 'checking' | 'running' | 'exiting' | 'hidden';
 type GlobeStatus = 'checking' | 'loading' | 'ready' | 'unavailable';
-type VisualQuality = 'low' | 'balanced' | 'high' | 'ultra';
-type EarthTextureResolution = '1k' | '2k' | '4k' | '8k';
+type VisualQuality = 'balanced' | 'high';
+type EarthTextureResolution = '1k' | '2k' | '4k';
 
 interface EarthTextureSet {
   resolution: EarthTextureResolution;
@@ -317,18 +317,15 @@ const arcPairs: ReadonlyArray<readonly [number, number]> = [
   [3, 6], [3, 11], [4, 9], [5, 6], [6, 9], [7, 8], [11, 12], [12, 13],
 ];
 
-const earthTextureResolutionOrder: readonly EarthTextureResolution[] = ['1k', '2k', '4k', '8k'];
+const earthTextureResolutionOrder: readonly EarthTextureResolution[] = ['1k', '2k', '4k'];
 const earthTextureResolutionByQuality: Record<VisualQuality, EarthTextureResolution> = {
-  low: '1k',
   balanced: '2k',
   high: '4k',
-  ultra: '8k',
 };
 const earthTexturePixelWidth: Record<EarthTextureResolution, number> = {
   '1k': 1024,
   '2k': 2048,
   '4k': 4096,
-  '8k': 8192,
 };
 
 function textureResolutionForQuality(
@@ -355,25 +352,27 @@ function cappedResolution(
     : ceiling;
 }
 
+function earthTextureSetForResolution(resolution: EarthTextureResolution): EarthTextureSet {
+  return {
+    resolution,
+    day: `/textures/earth-hd-day-${resolution}.webp`,
+    night: `/textures/earth-hd-night-${resolution}.webp`,
+    clouds: `/textures/earth-hd-clouds-${resolution}.webp`,
+    bump: `/textures/earth-hd-bump-${resolution}.webp`,
+    specular: `/textures/earth-hd-specular-${resolution}.webp`,
+  };
+}
+
 function earthTextureSetForQuality(
   quality: VisualQuality,
   maxTextureSize = Number.POSITIVE_INFINITY,
-  ceiling: EarthTextureResolution = '8k',
+  ceiling: EarthTextureResolution = '4k',
 ): EarthTextureSet {
   const resolution = cappedResolution(
     textureResolutionForQuality(quality, maxTextureSize),
     ceiling,
   );
-  const detailResolution = resolution === '8k' ? '4k' : resolution;
-
-  return {
-    resolution,
-    day: `/textures/earth-hd-day-${resolution}.webp`,
-    night: `/textures/earth-hd-night-${resolution}.webp`,
-    clouds: `/textures/earth-hd-clouds-${detailResolution}.webp`,
-    bump: `/textures/earth-hd-bump-${detailResolution}.webp`,
-    specular: `/textures/earth-hd-specular-${detailResolution}.webp`,
-  };
+  return earthTextureSetForResolution(resolution);
 }
 
 interface LoadedEarthTextures {
@@ -418,7 +417,8 @@ function useSiteVisualQuality(): VisualQuality {
   const readQuality = (): VisualQuality => {
     if (typeof document === 'undefined') return 'balanced';
     const value = document.documentElement.dataset.visualQuality;
-    if (value === 'low' || value === 'balanced' || value === 'high' || value === 'ultra') return value;
+    // 'ultra' and 'low' can linger in documents from older builds.
+    if (value === 'high' || value === 'ultra') return 'high';
     return 'balanced';
   };
 
@@ -1174,10 +1174,8 @@ function EarthGlobe({
       autoRotateSpeed: number;
       loadWebGlOnMobile: boolean;
     }> = {
-      low: { arcCount: 4, globeResolution: 8, pointResolution: 4, ringResolution: 24, cloudSegments: 32, anisotropy: 1, pixelRatio: 1.15, autoRotateSpeed: 0.12, loadWebGlOnMobile: false },
       balanced: { arcCount: 11, globeResolution: 5, pointResolution: 8, ringResolution: 64, cloudSegments: 80, anisotropy: 4, pixelRatio: 1.5, autoRotateSpeed: 0.24, loadWebGlOnMobile: false },
       high: { arcCount: 14, globeResolution: 3.5, pointResolution: 12, ringResolution: 96, cloudSegments: 112, anisotropy: 8, pixelRatio: 1.75, autoRotateSpeed: 0.36, loadWebGlOnMobile: false },
-      ultra: { arcCount: 16, globeResolution: 2.5, pointResolution: 16, ringResolution: 128, cloudSegments: 160, anisotropy: 8, pixelRatio: 2, autoRotateSpeed: 0.52, loadWebGlOnMobile: true },
     };
     return profiles[quality];
   }, [quality]);
@@ -1185,7 +1183,7 @@ function EarthGlobe({
   const useWebGlOnDevice = !reducedMotion && (!mobile || qualityProfile.loadWebGlOnMobile);
 
   const nodes = useMemo(
-    () => (mobile && quality !== 'ultra' ? allNodes.slice(0, quality === 'low' ? 5 : 7) : allNodes),
+    () => (mobile ? allNodes.slice(0, 7) : allNodes),
     [mobile, quality],
   );
 
@@ -1213,7 +1211,7 @@ function EarthGlobe({
   );
 
   const arcs = useMemo(() => {
-    const count = mobile && quality !== 'ultra' ? Math.min(qualityProfile.arcCount, 6) : qualityProfile.arcCount;
+    const count = mobile ? Math.min(qualityProfile.arcCount, 6) : qualityProfile.arcCount;
     return Array.from(
       { length: count },
       (_, index) => allArcs[(index + arcOffset) % allArcs.length],
@@ -1224,7 +1222,7 @@ function EarthGlobe({
     if (reducedMotion || !useWebGlOnDevice || !active) return;
     const interval = window.setInterval(() => {
       if (!document.hidden) setArcOffset((offset) => (offset + 1) % allArcs.length);
-    }, quality === 'ultra' ? 2600 : quality === 'high' ? 3200 : 3900);
+    }, quality === 'high' ? 3200 : 3900);
     return () => window.clearInterval(interval);
   }, [active, allArcs.length, quality, reducedMotion, useWebGlOnDevice]);
 
@@ -1270,11 +1268,10 @@ function EarthGlobe({
     const targetSet = earthTextureSetForQuality(quality, preflight.maxTextureSize);
     const anisotropy = Math.min(preflight.maxAnisotropy, qualityProfile.anisotropy);
     // Two-phase loading: the globe first appears with the tiny 1K set (about 150 KB in
-    // total) and the selected tier streams in later from idle time. This keeps the first
-    // paint cheap at every quality level instead of stalling on 4K/8K texture uploads.
-    const initialSet = targetSet.resolution === '1k'
-      ? targetSet
-      : earthTextureSetForQuality('low');
+    // total; internal first-paint tier, not user selectable) and the selected 2K/4K
+    // tier streams in later from idle time, so the first paint never stalls on a full
+    // texture upload.
+    const initialSet = earthTextureSetForResolution('1k');
     let cancelled = false;
     setStatus('loading');
     setMaterial(null);
@@ -1296,12 +1293,12 @@ function EarthGlobe({
         const globeMaterial = new THREE.MeshPhongMaterial({
           map: textures.day,
           bumpMap: textures.bump,
-          bumpScale: targetSet.resolution === '8k' ? 0.045 : 0.035,
+          bumpScale: targetSet.resolution === '4k' ? 0.045 : 0.035,
           emissiveMap: textures.night,
           emissive: new THREE.Color('#8dff70'),
           emissiveIntensity: 0.36,
           specularMap: textures.specular,
-          shininess: targetSet.resolution === '8k' ? 28 : 22,
+          shininess: targetSet.resolution === '4k' ? 28 : 22,
           specular: new THREE.Color('#8aa092'),
         });
 
