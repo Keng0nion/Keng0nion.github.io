@@ -27,7 +27,7 @@ The bilingual personal project archive of **Kengo Kubota (Keng0nion)**, built fo
 - English and Chinese routes with remembered language preference
 - Interactive cyberpunk home experience with Matrix rain and click particles
 - A WebGL Earth with day, night, normal, and cloud textures
-- Project archive with five bilingual project dossiers
+- Project archive with seven bilingual project dossiers
 - About, development journey, contact, and attribution pages
 - Static GitHub Pages deployment through GitHub Actions
 

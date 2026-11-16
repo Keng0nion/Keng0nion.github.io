@@ -19,8 +19,9 @@ export interface Project {
   status: ProjectStatus;
   github: string;
   homepage?: string;
+  githubLabel?: Localized;
   featured: boolean;
-  accent: 'lime' | 'cyan' | 'violet' | 'amber' | 'rose';
+  accent: 'lime' | 'cyan' | 'violet' | 'amber' | 'rose' | 'ice';
   index: string;
 }
 
@@ -204,6 +205,38 @@ export const projects: Project[] = [
     featured: false,
     accent: 'amber',
     index: '06',
+  },
+  {
+    slug: 'xuewu',
+    name: '雪屋 Igloo',
+    kicker: { en: 'Private chat over Tor', zh: '经 Tor 直连的保密聊天室' },
+    short: {
+      en: 'A private chat room that runs on your own computer over Tor: end to end encrypted, memory only, and gone when you close it.',
+      zh: '一个跑在自己电脑上、经 Tor 直连的保密聊天室：端到端加密、只存内存，关闭即消失。',
+    },
+    description: {
+      en: 'Igloo is a macOS app for private chat rooms that live on the owner’s own computer instead of a platform, with no official server anywhere. The room is published as a Tor hidden service, so participants never learn each other’s IP addresses, and messages are encrypted end to end, so even the host only relays ciphertext. Entry needs a privately shared card plus a password that rotates on the host’s screen every five minutes; kicking someone rekeys the room, and old cards stop working at once. Messages live only in memory, dissolve after 15 minutes, and are cleared for everyone when the room closes. Anti leak measures include screen recording detection that frosts the chat into snowfall, per viewer watermarks, and copy broadcast. The published v0.1.0 public beta is an unsigned Apple Silicon .dmg with Tor embedded, and the official site states its real device results along with what it admits it cannot do.',
+      zh: '雪屋（Igloo）是一个跑在自己电脑上的保密聊天室：没有平台，也没有官方服务器。房间以 Tor 隐藏服务发布，屋里的人互相看不到 IP，消息端到端加密，连房主的电脑也只转发密文。进房需要私下发的名片，加上房主屏幕上每 5 分钟自动轮换的密码；踢人即换钥匙，旧名片立刻作废。消息只存内存、15 分钟后自动溶解，关闭房间时全员内容一起清毁。反泄漏措施包括录屏侦测触发雪花自遮蔽、每个观看者自己的水印，以及复制内容时全屋广播。v0.1.0 公开测试版以内嵌 Tor 的 .dmg 发布（Apple Silicon，未签名）；官网列出了真机实测结果，也如实写明它挡不住什么。',
+    },
+    skills: {
+      en: 'Privacy engineering, Tor hidden service networking, end to end encryption workflows, real device acceptance testing, and communicating honest capability boundaries.',
+      zh: '隐私工程、Tor 隐藏服务组网、端到端加密流程、真机验收测试，以及如实表达能力边界。',
+    },
+    progress: {
+      en: 'The v0.1.0 public beta is downloadable for Apple Silicon macOS with Tor embedded. Acceptance tests from the packaged build cover creating a room, joining, kicking, rejecting expired cards, copy broadcast, and message encryption, and a residue scan after closing the room found zero plaintext traces on disk.',
+      zh: 'v0.1.0 公开测试版已可供 Apple Silicon macOS 下载，安装包内嵌 Tor。打包版验收覆盖建房、连入、踢人、旧名片拒绝、复制广播与消息加密；关闭房间后的残留扫描为零明文命中。',
+    },
+    nextStep: {
+      en: 'Next, I will keep expanding real device coverage and decide whether to pursue Apple signing and notarization, then consider builds beyond Apple Silicon macOS.',
+      zh: '下一步继续扩大真机覆盖，并权衡是否投入 Apple 签名与公证，之后考虑 Apple Silicon macOS 之外的打包。',
+    },
+    status: 'optimizing',
+    github: 'https://github.com/Keng0nion/xuewu',
+    homepage: 'https://keng0nion.github.io/xuewu/',
+    githubLabel: { en: 'View GitHub repo', zh: '查看 GitHub 仓库' },
+    featured: false,
+    accent: 'ice',
+    index: '07',
   },
 ];
 

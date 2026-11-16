@@ -127,7 +127,7 @@ const labels = copy[locale];
           </a>
         )}
         <a class="button secondary" href={project.github} target="_blank" rel="noreferrer">
-          {labels.source}
+          {project.githubLabel?.[locale] ?? labels.source}
         </a>
       </div>
     </div>

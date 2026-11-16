@@ -293,6 +293,7 @@ const accentMap: Record<string, readonly [string, string]> = {
   violet: ['#ae7bff', '174, 123, 255'],
   amber: ['#ffbf47', '255, 191, 71'],
   rose: ['#ff5c88', '255, 92, 136'],
+  ice: ['#b0e8ff', '176, 232, 255'],
 };
 
 const allNodes: GlobeNode[] = [
