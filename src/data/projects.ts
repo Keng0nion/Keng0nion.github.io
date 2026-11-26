@@ -35,8 +35,8 @@ export const projects: Project[] = [
       zh: '一个中英双语、本地优先的平台，通过可审计、可复现的建模流程探索大肠杆菌—抗生素种群动力学。',
     },
     description: {
-      en: 'Ecolab is a bilingual, local-first workspace for learning and testing an E. coli population model. Users can run antibiotic-exposure simulations in Learn / Sandbox, then inspect a Research Workspace with OD600 data-quality checks, parameter fitting, uncertainty and sensitivity analysis, and locked held-out evaluation. Its key result is honest reproducible analysis: the bundled 528-observation case reaches L3 data calibration but preserves the negative validation result and clearly states that it is not clinical advice.',
-      zh: 'Ecolab 是一个中英双语、本地优先的大肠杆菌种群模型学习与研究工作区。用户可以在 Learn / Sandbox 中模拟抗生素暴露，再在 Research Workspace 中查看 OD600 数据质量检查、参数拟合、不确定性与敏感性分析，以及锁定留出评价。它最重要的成果是诚实可复现的分析：内置 528 个观测的数据案例达到 L3 数据校准，但保留负面验证结果，并明确说明不能用于临床建议。',
+      en: 'Ecolab is a bilingual, local-first workspace for learning and testing an E. coli population model. Learn / Sandbox runs antibiotic-exposure simulations; the Research Workspace imports OD600 data with exact-observation readiness checks, fits behind explicit identifiability gates, and reports convergence, parameter-boundary, sigma and profile-likelihood status instead of hiding failed fits. Exports and research packages record versions, settings and random seeds for exact replay. The bundled 528-observation case reaches L3 calibration but keeps its negative result and labels the previously viewed holdout as a development comparison, not untouched validation.',
+      zh: 'Ecolab 是一个中英双语、本地优先的大肠杆菌种群模型学习与研究工作区。Learn / Sandbox 运行抗生素暴露模拟；Research Workspace 导入 OD600 数据并显示精确观测门槛，拟合受识别性门槛约束，并如实报告收敛、参数边界、σ 与轮廓似然状态，而不是掩盖失败拟合。导出结果与研究包记录版本、设置和随机种子，支持精确回放。内置 528 个观测的数据案例达到 L3 校准，但保留负面结果，并把已查看的留出曲线标为开发集比较，而非未触碰验证。',
     },
     skills: {
       en: 'Scientific model design, data-quality reasoning, reproducible analysis, uncertainty and sensitivity evaluation, and communicating limitations honestly.',
